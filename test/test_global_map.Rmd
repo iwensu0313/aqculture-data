@@ -21,6 +21,8 @@ source("global.R")
 
 ## Define color palette
 ygb <- colorRampPalette(brewer.pal(5,'YlGnBu'))(200); cols <- ygb[19:200]
+OrRd <- colorRampPalette(brewer.pal(5, 'OrRd'))(200) # Orange, Red
+OrRd_cols <- OrRd[19:200]
 
 ```
 
@@ -97,6 +99,26 @@ leaflet(test,options = leafletOptions(zoomControl = FALSE)) %>%
  
 ```
 
+test circle markers, no pie chart
+```{r}
+
+test <- shrimp_refuse_pie %>% 
+  filter(YEAR == 2018)
+
+      
+
+leaflet(test,options = leafletOptions(zoomControl = FALSE)) %>%
+  addCircleMarkers(lng = ~LON, lat = ~LAT,
+    radius = ~35*sqrt(test$REFUSAL_NUM) / sqrt(max(test$REFUSAL_NUM)),
+    stroke = FALSE, 
+    color = OrRd[150],
+    fillOpacity = 0.5,
+    label = ~paste(COUNTRY_NAME, ": ", as.character(REFUSAL_NUM), " Refusals")) %>% 
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  setView(-9.718568, 34.331989, zoom = 2) 
+
+
+```
 
 
 

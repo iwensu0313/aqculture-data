@@ -63,43 +63,43 @@ shrimp_tidy <- shrimp_imp %>%
 
 
 
-## SHRIMP IMPORT REFUSAL INSTANCES PER COUNTRY ##
+# ## SHRIMP IMPORT REFUSAL INSTANCES PER COUNTRY ##
+# 
+# ## Wrangle
+# ref_inst <- shrimp_tidy %>% 
+#   select(REFUSAL_DATE, COUNTRY_NAME)
+# 
+# 
+# 
+# ## Summarize: Count number of refusals per country per year
+# shrimp_summ <- shrimp_tidy %>%
+#   group_by(YEAR, COUNTRY_NAME) %>%
+#   tally() %>%
+#   ungroup() %>%
+#   rename(REFUSALS = n)
+# 
+# 
+# 
+# ## Plotting Prep
+# # Add spatial data
+# global <- st_read("data/ref/countries.shp")
+# global_tidy <- global %>%
+#   select(COUNTRY_NAME = SOVEREIGNT)
+# 
+# # check country name matches
+# setdiff(shrimp_summ$COUNTRY_NAME, global_tidy$COUNTRY_NAME)
+# 
+# # FIXXXXXXXXXXX missing aruba, singapore, hong kong shapefiles
+# shrimp_refuse_map <- global_tidy %>%
+#   left_join(shrimp_summ, by="COUNTRY_NAME") %>%
+#   filter(!is.na(YEAR)) %>%  # FIXXXXXXXXXXXXXXXX
+#   mutate(YEAR = as.integer(YEAR)) %>%
+#   mutate(Units = "Refusals")
+# 
+# 
 
-## Wrangle
-ref_inst <- shrimp_tidy %>% 
-  select(REFUSAL_DATE, COUNTRY_NAME)
 
-
-
-## Summarize: Count number of refusals per country per year
-shrimp_summ <- shrimp_tidy %>%
-  group_by(YEAR, COUNTRY_NAME) %>%
-  tally() %>%
-  ungroup() %>%
-  rename(REFUSALS = n)
-
-
-
-## Plotting Prep
-# Add spatial data
-global <- st_read("data/ref/countries.shp")
-global_tidy <- global %>%
-  select(COUNTRY_NAME = SOVEREIGNT)
-
-# check country name matches
-setdiff(shrimp_summ$COUNTRY_NAME, global_tidy$COUNTRY_NAME)
-
-# FIXXXXXXXXXXX missing aruba, singapore, hong kong shapefiles
-shrimp_refuse_map <- global_tidy %>%
-  left_join(shrimp_summ, by="COUNTRY_NAME") %>%
-  filter(!is.na(YEAR)) %>%  # FIXXXXXXXXXXXXXXXX
-  mutate(YEAR = as.integer(YEAR)) %>%
-  mutate(Units = "Refusals")
-
-
-
-
-## SHRIMP IMPORT REFUSAL CHARGE REASONS MAP MINI PIE CHART ##
+## SHRIMP IMPORT REFUSAL DOT DISTRIBUTION MAP ##
 
 ## Wrangle: 
 # Add identifier for each unique refusal instance
@@ -155,13 +155,15 @@ shrimp_spatial <- shrimp_summ %>%
   left_join(cntry_coord, by = "COUNTRY_NAME")
 
 # Taking top refusals to make dataset easier to test
-shrimp_refuse_pie <- shrimp_spatial %>%
+shrimp_refuse_dot <- shrimp_spatial %>%
   select(YEAR, COUNTRY_NAME, LAT, LON, SALMONELLA, VETDRUGES, NITROFURAN, FILTHY, REFUSAL_NUM) 
 
 
 
 
-## REFUSAL CHARGES REASONS BAR GRAPH ##
+
+
+## REFUSAL CHARGES STACKED BAR GRAPH ##
 
 ## Summarize
 ref_summ <- shrimp_gather %>%
@@ -170,48 +172,50 @@ ref_summ <- shrimp_gather %>%
   ungroup() %>%
   rename(REFUSAL_COUNT = n)
 
-unique(ref_summ$REFUSAL_CHARGES) # 45 reasons
+#unique(ref_summ$REFUSAL_CHARGES) # 45 reasons
 
-test <- ref_summ %>% 
-  filter(COUNTRY_NAME == "India") %>% 
+fix_charges <- ref_summ %>%
   mutate(DESCRIPTION = case_when(
     str_detect(REFUSAL_CHARGES, "SALMONELLA") ~ "SALMONELLA",
     str_detect(REFUSAL_CHARGES, "NITROFURAN") ~ "NITROFURAN",
     str_detect(REFUSAL_CHARGES, "FILTHY") ~ "FILTHY",
-    str_detect(REFUSAL_CHARGES, "VETDRUGES") ~ "VET. DRUGS")) 
-  
-test <- test %>% 
+    str_detect(REFUSAL_CHARGES, "VETDRUGES") ~ "VET. DRUGS"))
+
+shrimp_stacked <- fix_charges %>%
   mutate(DESCRIPTION = if_else(is.na(DESCRIPTION), "OTHER", DESCRIPTION))
 
-## Test Plot
-color_group = ~DESCRIPTION
-colors = ygb_cols
-plot_type = "bar"
-#mode = "lines+markers"
-line = list(width=3)
-marker = list(size=6)
-tooltip_text = paste("Charge: ", test$DESCRIPTION,
-                      "<br>Refused:", test$REFUSAL_COUNT, "Imports", sep=" ")
-xaxis_label = "Year"
-yaxis_label = "Number of Charges"
+# ## Test Plot
+# color_group = ~DESCRIPTION
+# colors = ygb_cols
+# plot_type = "bar"
+# #mode = "lines+markers"
+# line = list(width=3)
+# marker = list(size=6)
+# tooltip_text = paste("Charge: ", test$DESCRIPTION,
+#                       "<br>Refused:", test$REFUSAL_COUNT, "Imports", sep=" ")
+# xaxis_label = "Year"
+# yaxis_label = "Number of Charges"
 
 
-p <- plot_ly(test,
-             x = ~YEAR,
-             y = ~REFUSAL_COUNT,
-             color = color_group,
-             colors = colors,
-             type = plot_type,
-             line = line,
-            # mode = mode,
-             marker = marker,
-             text = tooltip_text,
-             hoverinfo = "text") %>%
-  layout(yaxis = list(title = "Refusal Charge Count"), 
-         barmode = "stack",
-         xaxis = list(title = "Year",
-                      dtick = 1,
-                      tickangle = 45))
+# p <- plot_ly(shrimp_stacked,
+#              x = ~YEAR,
+#              y = ~REFUSAL_COUNT,
+#              color = color_group,
+#              colors = colors,
+#              type = plot_type,
+#              line = line,
+#             # mode = mode,
+#              marker = marker,
+#              text = tooltip_text,
+#              hoverinfo = "text") %>%
+#   layout(yaxis = list(title = "Refusal Charge Count"),
+#          barmode = "stack",
+#          xaxis = list(title = "Year",
+#                       dtick = 1,
+#                       tickangle = 45))
+
+
+## Excess code
   # layout(font = list(family = "Lato", size = 14),
   #        xaxis = list(title = xaxis_label,
   #                     fixedrange = TRUE,
@@ -228,4 +232,4 @@ p <- plot_ly(test,
   #        annotations = annotations,
   #        margin = list(b = xaxis_margin)) %>%
   # config(displayModeBar = F)
-p
+#p

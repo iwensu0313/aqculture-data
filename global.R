@@ -35,9 +35,10 @@ OrRd_cols <- OrRd[19:200]
 
 ## source modules
 source("modules/chart_card.R")
-source("modules/map_card.R")
+source("modules/choro_map_card.R")
+source("modules/minichart_map_card.R")
+source("modules/dot_map_card.R")
 source("modules/summary_stats_card.R")
-source("modules/map_minichart_card.R")
 
 ## source functions
 source("functions/helper_functions.R")

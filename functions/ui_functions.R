@@ -16,8 +16,9 @@ dash_header =
                  div(class = "aq-brand",
                      tags$a(class = "aq-brand", href = "https://iwensu0313.github.io",
                             title = "Shiny by Iwen Su",
-                            tags$img(src = "https://docs.google.com/drawings/d/e/2PACX-1vTXlT7ETO9aoinxUo2omFujEQjfB9GnlvMf8h7hq6JQN5HdgkM0U6s_Nn9pZAKCPJGUJ_S9xylK6iy7/pub?w=510&h=125",
-                                     alt = "Dashboard by Iwen Su"))
+                            tags$img(src = "https://docs.google.com/drawings/d/e/2PACX-1vRQzA-kpGtw9ehYyOJNmfgmOk1g3H0Yal-brEmzglO5yCzisl7LVUI6NWs4PzvWYL02cAnEubra_vlP/pub?w=953&h=204",
+                                     alt = "Dashboard by Iwen Su",
+                                     width = "600"))
                      ))
   }
 
