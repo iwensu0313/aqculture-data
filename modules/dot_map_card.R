@@ -80,6 +80,7 @@ dot_map_ui <- function(id,
                    select_choices = c(""),
                    select_label = NULL, 
                    selected = NULL,
+                   animate = FALSE,
                    source_text = NULL,
                    box_width = NULL) {
   
@@ -108,7 +109,8 @@ dot_map_ui <- function(id,
                             min = slider_min,
                             max = slider_max,
                             value = slider_start,
-                            sep = slider_sep)
+                            sep = slider_sep,
+                            animate = animate)
     } else {
       select <- checkboxGroupInput(ns("select"),
                                    choices = select_choices,

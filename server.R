@@ -50,7 +50,7 @@ function(input, output, session) {
   
   
   
-  ## FDA Shrimp Import Refusal ##
+  ## FDA Shrimp Import Refusal Counts ##
   callModule(card_dot_map, "shrimp_dot_map",
              data = shrimp_refuse_dot,
              field = "input",
@@ -67,6 +67,7 @@ function(input, output, session) {
              lat = 30,
              zoom = 2)
   
+  ## FDA Shrimp Import Refusal Charges ##
   callModule(card_plot, "shrimp_stacked_plot",
              shrimp_stacked,
              x = "YEAR",

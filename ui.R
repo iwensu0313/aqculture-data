@@ -97,21 +97,22 @@ dashboardPage("US Aquaculture",
                                   div(class = "master",
                                       
                                       tab_title(title = "FDA Shrimp Import Refusals",
+                                                lead = "THIS PAGE IS STILL IN PROGRESS",
+                                                # \"A refusal is FDA’s final decision that a detained shipment is in violation of FDA laws and regulations.  A refused shipment must either be destroyed or exported..\" - US Food and Drug Administration
                                                 subtitle = "About the Data:",
-                                                description = "Below you will find data on US shrimp imports that were refused from the Food and Drug Administration database. Data includes the number of refusals per country from 2002 to 2018 as well as percentage of refusals due to presence of salmonella, filth, nitrofurans (a type of drug used in antibiotics), and veterinary drugs."),
+                                                description = "This page is a collaboration with the World Wildlife Fund. Below you will find data on US shrimp imports that were refused from the Food and Drug Administration database. Data includes the number of refusals per country from 2002 to 2018 as well as percentage of refusals due to presence of salmonella, filth, nitrofurans (a type of drug used in antibiotics), and veterinary drugs."),
                                       
                                       ## Shrimp Refusals Map
                                       dot_map_ui(id = "shrimp_dot_map",
-                                                 title_text = paste0("Import Refusals"),
-                                                 sub_title_text = "Start exploring! Click on specific countries to see the number of shrimp imports that were refused by the FDA for that year. Use the slider to view import refusal data from 2002 to 2018.",
+                                                 title_text = paste0("How many Shrimp Imports were Refused by the FDA?"),
+                                                 sub_title_text = "Start exploring! Hover over data points to see the number of shrimp imports that were refused by the FDA and the associated import country. Use the slider to view import refusal data from 2002 to 2018. Click on the play button to view an animation of the time series.",
                                                  select_type = "slider",
                                                  select_location = "below",
                                                  slider_min = 2002,
                                                  slider_max = 2018,
                                                  slider_start = 2018,
                                                  slider_sep = "",
-                                                 
-                                                 
+                                                 animate = TRUE,
                                                  source_text = list(
                                                    p("Sources:"),
                                                    p(tags$sup("1."), tags$a(href="https://www.accessdata.fda.gov/scripts/ImportRefusals/index.cfm", "Food and Drug Administration"), ", Import Refusal Report (2002-2018)"))
@@ -120,12 +121,12 @@ dashboardPage("US Aquaculture",
                                       
                                       ## Refusal Charges Stacked Bar Graph
                                       plot_ui(id = "shrimp_stacked_plot",
-                                        title_text = "Top Shrimp Refusal Charges",
+                                        title_text = "Why were the Shrimp Imports Refused?",
                                         sub_title_text = NULL,
                                         select_type = "search",
                                         select_location = "above",
                                         select_choices = unique(shrimp_stacked$COUNTRY_NAME),
-                                        selected = "India",
+                                        selected = "Thailand",
                                         select_label = NULL, 
                                         source_text = list(
                                           p("Sources:"),
