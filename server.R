@@ -67,27 +67,26 @@ function(input, output, session) {
              lat = 30,
              zoom = 2)
   
-  ## FDA Shrimp Import Refusal Charges ##
+  
+  ## FDA Shrimp Import Refusal Charges 1 ##
   callModule(card_plot, "shrimp_stacked_plot",
              shrimp_stacked,
              x = "YEAR",
              y = "REFUSAL_COUNT",
+             xaxis_range = c(2001.5,2018.5),
+             yaxis_range = c(0,max(shrimp_stacked$REFUSAL_COUNT)),
              color_group = "DESCRIPTION",
              filter_field = "COUNTRY_NAME",
              colors = ygb_cols, 
              mode = NULL,
              plot_type = "bar",
              barmode = "stack",
-             tooltip_text = ~paste("Charge: ", DESCRIPTION,
+             tooltip_text = ~paste("Charge: ", capStr(DESCRIPTION),
                                   "<br>Refused:", REFUSAL_COUNT, "Imports", sep=" "),
              xaxis_label = "Year",
              yaxis_label = "Refusal Charge Count",
              x_tickangle = 45,
              x_dtick = 1)
-
-
-  
-  
   
   
 

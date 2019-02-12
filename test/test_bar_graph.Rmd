@@ -1,0 +1,63 @@
+---
+title: "Testing Stacked Bar Graph"
+author: "Iwen Su"
+output: html_document
+---
+
+# Setup
+```{r, message=FALSE,warning=FALSE}
+
+library(tidyverse)
+library(rgdal)
+library(leaflet)
+library(here)
+library(RColorBrewer)
+library(sf)
+library(rworldmap)
+library(leaflet.minicharts)
+
+setwd(here())
+source("global.R")
+
+## Define color palette
+ygb <- colorRampPalette(brewer.pal(5,'YlGnBu'))(200); cols <- ygb[19:200]
+OrRd <- colorRampPalette(brewer.pal(5, 'OrRd'))(200) # Orange, Red
+OrRd_cols <- OrRd[19:200]
+
+```
+
+# Test Stacked Bar Graph - Cowplot
+
+```{r}
+## Test Plot
+colors = ygb_cols
+plot_type = "bar"
+#mode = "lines+markers"
+line = list(width=3)
+marker = list(size=6)
+tooltip_text = paste("Charge: ", shrimp_stacked$DESCRIPTION,
+                      "<br>Refused:", shrimp_stacked$REFUSAL_COUNT, "Imports", sep=" ")
+xaxis_label = "Year"
+yaxis_label = "Number of Charges"
+
+p <- plot_ly(shrimp_stacked,
+             x = ~YEAR,
+             y = ~REFUSAL_COUNT,
+             color = ~DESCRIPTION,
+             colors = colors,
+             type = "bar",
+             line = line,
+            # mode = mode,
+             marker = marker,
+             text = tooltip_text,
+             hoverinfo = "text") %>%
+  layout(yaxis = list(title = "Refusal Charge Count"),
+         barmode = "stack",
+         xaxis = list(title = "Year",
+                      dtick = 1,
+                      tickangle = 45))
+
+p
+
+
+```

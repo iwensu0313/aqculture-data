@@ -97,8 +97,7 @@ dashboardPage("US Aquaculture",
                                   div(class = "master",
                                       
                                       tab_title(title = "FDA Shrimp Import Refusals",
-                                                lead = "THIS PAGE IS STILL IN PROGRESS",
-                                                # \"A refusal is FDA’s final decision that a detained shipment is in violation of FDA laws and regulations.  A refused shipment must either be destroyed or exported..\" - US Food and Drug Administration
+                                                lead = "\"About 94 percent of our shrimp supply comes from abroad, from countries such as India, Indonesia, and Thailand.\" - Consumer Report 2015",
                                                 subtitle = "About the Data:",
                                                 description = "This page is a collaboration with the World Wildlife Fund. Below you will find data on US shrimp imports that were refused from the Food and Drug Administration database. Data includes the number of refusals per country from 2002 to 2018 as well as percentage of refusals due to presence of salmonella, filth, nitrofurans (a type of drug used in antibiotics), and veterinary drugs."),
                                       
@@ -118,26 +117,20 @@ dashboardPage("US Aquaculture",
                                                    p(tags$sup("1."), tags$a(href="https://www.accessdata.fda.gov/scripts/ImportRefusals/index.cfm", "Food and Drug Administration"), ", Import Refusal Report (2002-2018)"))
                                                  ), # end dot map ui
                                       
-                                      
-                                      ## Refusal Charges Stacked Bar Graph
+                                 
+                                      ## Refusal Charges Stacked Bar Graph 1
                                       plot_ui(id = "shrimp_stacked_plot",
                                         title_text = "Why were the Shrimp Imports Refused?",
-                                        sub_title_text = NULL,
+                                        sub_title_text = "Start exploring! The countries in the drop-down menu are ordered by highest to lowest cumulative number of shrimp import refusals over the last 5 years. Malaysia is the top, recent offender with 697 import refusals from 2014 - 2018, followed by India and Vietnam with 447 and 212 refusals respectively. Hover over the bars to view number of refusals per reason.",
                                         select_type = "search",
                                         select_location = "above",
-                                        select_choices = unique(shrimp_stacked$COUNTRY_NAME),
-                                        selected = "Thailand",
-                                        select_label = NULL, 
+                                        select_choices = order_cntry,
+                                        select_label = "Choose a Country:",
                                         source_text = list(
                                           p("Sources:"),
                                           p(tags$sup("1."), tags$a(href="https://www.accessdata.fda.gov/scripts/ImportRefusals/index.cfm", "Food and Drug Administration"), ", Import Refusal Report (2002-2018)"))
                                         
                                       ) # end shrimp refusal charges bar graph
-                                      
-                                      
-                                      
-                                      
-                                      
                                       
                                       
                                   ) # end div

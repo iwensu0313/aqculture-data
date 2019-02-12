@@ -121,7 +121,6 @@ leaflet(test,options = leafletOptions(zoomControl = FALSE)) %>%
 ```
 
 
-
 # Testing Shrimp Refusal Chloropleth Map
 
 ## Import Countries Shapefile

@@ -20,6 +20,8 @@ library(janitor)
 library(sendmailR)
 library(shinyAce)
 library(DT)
+library(cowplot)
+
 
 ## Color Palettes
 # Eliminate super light yellow colors
