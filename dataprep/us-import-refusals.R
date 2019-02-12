@@ -35,14 +35,14 @@ cntry_coord <- read.csv("data/ref/country_lat_lon.csv", stringsAsFactors = FALSE
 
 ## Tidy
 
-shrimp_space <- fda %>%
-  mutate(COUNTRY_NAME = sub("^\\s+", "", COUNTRY_NAME)) # remove leading spaces
+# shrimp_space <- fda %>%
+#   mutate(COUNTRY_NAME = sub("^\\s+", "", COUNTRY_NAME)) # remove leading spaces
 
 # fix date column to a format R can understand
-shrimp_space$REFUSAL_DATE <- as.Date(shrimp_space$REFUSAL_DATE, "%Y-%m-%d")
+fda$REFUSAL_DATE <- as.Date(fda$REFUSAL_DATE, "%m/%d/%Y")
 
 # create a separate year column
-shrimp_imp <- shrimp_space %>%
+shrimp_imp <- fda %>%
   mutate(YEAR = lubridate::year(REFUSAL_DATE)) 
 
 # fix country names Cote d'Ivoire to Ivory Coast
@@ -63,41 +63,6 @@ shrimp_tidy <- shrimp_imp %>%
 
 
 
-# ## SHRIMP IMPORT REFUSAL INSTANCES PER COUNTRY ##
-# 
-# ## Wrangle
-# ref_inst <- shrimp_tidy %>% 
-#   select(REFUSAL_DATE, COUNTRY_NAME)
-# 
-# 
-# 
-# ## Summarize: Count number of refusals per country per year
-# shrimp_summ <- shrimp_tidy %>%
-#   group_by(YEAR, COUNTRY_NAME) %>%
-#   tally() %>%
-#   ungroup() %>%
-#   rename(REFUSALS = n)
-# 
-# 
-# 
-# ## Plotting Prep
-# # Add spatial data
-# global <- st_read("data/ref/countries.shp")
-# global_tidy <- global %>%
-#   select(COUNTRY_NAME = SOVEREIGNT)
-# 
-# # check country name matches
-# setdiff(shrimp_summ$COUNTRY_NAME, global_tidy$COUNTRY_NAME)
-# 
-# # FIXXXXXXXXXXX missing aruba, singapore, hong kong shapefiles
-# shrimp_refuse_map <- global_tidy %>%
-#   left_join(shrimp_summ, by="COUNTRY_NAME") %>%
-#   filter(!is.na(YEAR)) %>%  # FIXXXXXXXXXXXXXXXX
-#   mutate(YEAR = as.integer(YEAR)) %>%
-#   mutate(Units = "Refusals")
-# 
-# 
-
 
 ## SHRIMP IMPORT REFUSAL DOT DISTRIBUTION MAP ##
 
@@ -109,8 +74,7 @@ shrimp_gather <- shrimp_tidy %>%
   mutate(ID = 1:nrow(.)) %>% # num of refusal instances
   gather("DELETE", "REFUSAL_CHARGES", contains("REFUSAL_CHARGES")) %>%
   select(-DELETE) %>%
-  filter(REFUSAL_CHARGES != "") %>%  # remove rows with no refusal charge value
-  mutate(REFUSAL_CHARGES = sub("^\\s+", "", REFUSAL_CHARGES)) # remove white space
+  filter(REFUSAL_CHARGES != "")  # remove rows with no refusal charge value
 
 
 
@@ -162,7 +126,6 @@ shrimp_refuse_dot <- shrimp_spatial %>%
 
 
 
-
 ## REFUSAL CHARGES STACKED BAR GRAPH ##
 
 ## Summarize
@@ -174,6 +137,7 @@ ref_summ <- shrimp_gather %>%
 
 #unique(ref_summ$REFUSAL_CHARGES) # 45 reasons
 
+# Fix naming
 fix_charges <- ref_summ %>%
   mutate(DESCRIPTION = case_when(
     str_detect(REFUSAL_CHARGES, "SALMONELLA") ~ "SALMONELLA",
@@ -181,8 +145,24 @@ fix_charges <- ref_summ %>%
     str_detect(REFUSAL_CHARGES, "FILTHY") ~ "FILTHY",
     str_detect(REFUSAL_CHARGES, "VETDRUGES") ~ "VET. DRUGS"))
 
+# clump all other charges into one category
 shrimp_stacked <- fix_charges %>%
   mutate(DESCRIPTION = if_else(is.na(DESCRIPTION), "OTHER", DESCRIPTION))
+
+# Reorder, starting from what you want listed last to first in the Legend  
+shrimp_stacked$DESCRIPTION <- factor(shrimp_stacked$DESCRIPTION, levels = c("OTHER", "FILTHY", "VET. DRUGS", "NITROFURAN", "SALMONELLA"))
+
+# top offending countries in the last 5 years - used for ordering drop down menu countries
+total_refusals <- shrimp_stacked %>% 
+  filter(YEAR %in% c(2014, 2015, 2016, 2017, 2018)) %>% 
+  group_by(COUNTRY_NAME) %>% 
+  summarise(total = sum(REFUSAL_COUNT)) %>% 
+  ungroup() %>% 
+  arrange(desc(total))
+order_cntry <- total_refusals$COUNTRY_NAME
+
+
+
 
 # ## Test Plot
 # color_group = ~DESCRIPTION
