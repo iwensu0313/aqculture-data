@@ -4,7 +4,7 @@ function(input, output, session) {
   
   
   
-  ## US Finfish Aquaculture Baseline Metrics ##
+  ## Finfish Aquaculture Summary Stats ##
   callModule(summary_stats, "fish_metrics",
              number_boxes = 3,
              statistic = list("51%", "$203 M", "35%"),
@@ -12,7 +12,8 @@ function(input, output, session) {
                          "in finfish aquaculture products were sold in Mississippi, the highest food fish producing state.",
                          "of food fish farms were located in Mississippi, Alabama, and North Carolina."))
   
-  ## Finfish Aquaculture US Map ##
+  
+  ## Finfish Aquaculture Map ##
   callModule(card_choro_map, "fish_us_map",
              data = fish_us_map,
              field = "input",
@@ -26,7 +27,7 @@ function(input, output, session) {
   
 
   
-  ## US Mollusk Aquaculture Baseline Metrics ##
+  ## Mollusk Aquaculture Summary Stats ##
   callModule(summary_stats, "shell_metrics",
              number_boxes = 3,
              statistic = list("55%", "45%", "52%"),
@@ -35,8 +36,7 @@ function(input, output, session) {
                          "of mollusk farms are in Florida, Massachusetts, and Washington."))
   
   
-  
-  ## Mollusk Aquaculture US Map ##
+  ## Mollusk Aquaculture Map ##
   callModule(card_choro_map, "shell_us_map",
              data = shell_us_map,
              field = "input",
@@ -50,7 +50,16 @@ function(input, output, session) {
   
   
   
-  ## FDA Shrimp Import Refusal Counts ##
+  ## FDA Shrimp Import Refusal Summary Stats ##
+  callModule(summary_stats, "shrimp_metrics",
+             number_boxes = 3,
+             statistic = list("40%", "15%", "36%"),
+             text = list("of shrimp import refusals over the last 10 years came from India and Malaysia equally, the top two offending countries.",
+                         "of shrimp import refusals over the last 10 years came from Vietnam, followed by Indonesia at 10%.",
+                         "of refusals in recent years were due to presence of Salmonella. Traces of veterinary drugs came in second at 19%."))
+  
+  
+  ## FDA Shrimp Import Refusal Counts Map ##
   callModule(card_dot_map, "shrimp_dot_map",
              data = shrimp_refuse_dot,
              field = "input",
@@ -67,8 +76,7 @@ function(input, output, session) {
              lat = 30,
              zoom = 2)
   
-  
-  ## FDA Shrimp Import Refusal Charges 1 ##
+  ## FDA Shrimp Import Refusal Charges Stacked Plot ##
   callModule(card_plot, "shrimp_stacked_plot",
              shrimp_stacked,
              x = "YEAR",

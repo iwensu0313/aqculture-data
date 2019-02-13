@@ -38,7 +38,7 @@ dashboardPage("US Aquaculture",
                                                 description = list("Below you will find US production data from the US Department of Aquaculture Quick Stats database for food fish and mollusks. The information displayed is from the most recent, comprehensive, available source: the USDA 2013 Census Aquaculture. Farms include facilities with sales of $1,000 or more. Total sales in dollars for US food fish production had to be estimated for 15 states due to undisclosed data. For mollusk production, total sales in dollars had to be estimated for Alaska, Georgia, Hawaii, Maine, Massachusetts, and Pennsylvania. These were estimated by multiplying the number of farm operations by the average US sales per operation for mollusks and food fish separately. The 2018 USDA aquaculture census will be released in late 2019.")),
                                       
                                       
-                                      ## Baseline Metrics
+                                      ## Summary Stats
                                       summary_stats_ui(id = "fish_metrics",
                                                        number_boxes = 3),
                                       
@@ -61,7 +61,7 @@ dashboardPage("US Aquaculture",
                                       ), # end of map ui
                                       
                                       
-                                      ## Baseline Metrics
+                                      ## Summary Stats
                                       summary_stats_ui(id = "shell_metrics",
                                                        number_boxes = 3),
                                       
@@ -96,10 +96,15 @@ dashboardPage("US Aquaculture",
                                   
                                   div(class = "master",
                                       
+                                      ## Tab Title
                                       tab_title(title = "FDA Shrimp Import Refusals",
                                                 lead = "\"About 94 percent of our shrimp supply comes from abroad, from countries such as India, Indonesia, and Thailand.\" - Consumer Report 2015",
                                                 subtitle = "About the Data:",
-                                                description = "This page is a collaboration with the World Wildlife Fund. Below you will find data on US shrimp imports that were refused from the Food and Drug Administration database. Data includes the number of refusals per country from 2002 to 2018 as well as percentage of refusals due to presence of salmonella, filth, nitrofurans (a type of drug used in antibiotics), and veterinary drugs."),
+                                                description = " Below you will find data on US shrimp imports that were refused by the US Food and Drug Administration from 2002 to 2018. Data includes the number of refusals per country as well as a break down of refusal charges due to presence of salmonella, filth, nitrofurans (a type of drug used in antibiotics), veterinary drugs, and all other reasons. This page is a collaboration with the World Wildlife Fund."),
+                                      
+                                      ## Summary Stats
+                                      summary_stats_ui(id = "shrimp_metrics",
+                                                       number_boxes = 3),
                                       
                                       ## Shrimp Refusals Map
                                       dot_map_ui(id = "shrimp_dot_map",
@@ -118,7 +123,7 @@ dashboardPage("US Aquaculture",
                                                  ), # end dot map ui
                                       
                                  
-                                      ## Refusal Charges Stacked Bar Graph 1
+                                      ## Shrimp Refusal Charges Plot
                                       plot_ui(id = "shrimp_stacked_plot",
                                         title_text = "Why were the Shrimp Imports Refused?",
                                         sub_title_text = "Start exploring! The countries in the drop-down menu are ordered by highest to lowest cumulative number of shrimp import refusals over the last 5 years. Malaysia is the top, recent offender with 697 import refusals from 2014 - 2018, followed by India and Vietnam with 447 and 212 refusals respectively. Hover over the bars to view number of refusals per reason.",

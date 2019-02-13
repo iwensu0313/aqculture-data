@@ -35,9 +35,6 @@ cntry_coord <- read.csv("data/ref/country_lat_lon.csv", stringsAsFactors = FALSE
 
 ## Tidy
 
-# shrimp_space <- fda %>%
-#   mutate(COUNTRY_NAME = sub("^\\s+", "", COUNTRY_NAME)) # remove leading spaces
-
 # fix date column to a format R can understand
 fda$REFUSAL_DATE <- as.Date(fda$REFUSAL_DATE, "%m/%d/%Y")
 
@@ -60,7 +57,6 @@ shrimp_tidy <- shrimp_imp %>%
     str_detect(COUNTRY_NAME, "Taiwan\\, Province of China") ~ "Taiwan",
     TRUE ~ COUNTRY_NAME
   ))
-
 
 
 
@@ -124,6 +120,11 @@ shrimp_refuse_dot <- shrimp_spatial %>%
 
 
 
+## Save data table
+write.csv(shrimp_refuse_dot, "data/output/shrimp_refuse_map.csv")
+
+
+
 
 
 ## REFUSAL CHARGES STACKED BAR GRAPH ##
@@ -163,53 +164,40 @@ order_cntry <- total_refusals$COUNTRY_NAME
 
 
 
-
-# ## Test Plot
-# color_group = ~DESCRIPTION
-# colors = ygb_cols
-# plot_type = "bar"
-# #mode = "lines+markers"
-# line = list(width=3)
-# marker = list(size=6)
-# tooltip_text = paste("Charge: ", test$DESCRIPTION,
-#                       "<br>Refused:", test$REFUSAL_COUNT, "Imports", sep=" ")
-# xaxis_label = "Year"
-# yaxis_label = "Number of Charges"
+## Save data
+write.csv(shrimp_stacked, "data/output/shrimp_refuse_bar.csv")
+write.csv(total_refusals, "data/int/shrimp_refuse_totals_5yr.csv")
 
 
-# p <- plot_ly(shrimp_stacked,
-#              x = ~YEAR,
-#              y = ~REFUSAL_COUNT,
-#              color = color_group,
-#              colors = colors,
-#              type = plot_type,
-#              line = line,
-#             # mode = mode,
-#              marker = marker,
-#              text = tooltip_text,
-#              hoverinfo = "text") %>%
-#   layout(yaxis = list(title = "Refusal Charge Count"),
-#          barmode = "stack",
-#          xaxis = list(title = "Year",
-#                       dtick = 1,
-#                       tickangle = 45))
+
+## Summary Stats
+# Determine top offending countries based on cumuluative number of refusals over the last ten years and % contribution
+stats <- shrimp_refuse_dot %>% 
+  select(YEAR, COUNTRY = COUNTRY_NAME, REFUSAL_NUM) %>% 
+  filter(YEAR %in% c(2009:2018)) %>% 
+  group_by(COUNTRY) %>% 
+  dplyr::summarize(REFUSAL_TOT = sum(REFUSAL_NUM)) %>% 
+  ungroup() %>% 
+  arrange(desc(REFUSAL_TOT))
+
+all = sum(stats$REFUSAL_TOT)
+
+stats <- stats %>% 
+  mutate(REFUSAL_PCT = REFUSAL_TOT/all)
 
 
-## Excess code
-  # layout(font = list(family = "Lato", size = 14),
-  #        xaxis = list(title = xaxis_label,
-  #                     fixedrange = TRUE,
-  #                     linecolor = "#A9A9A9",
-  #                     categoryorder = xaxis_categoryorder,
-  #                     categoryarray = xaxis_categoryarray),
-  #        yaxis = list(title = yaxis_label,
-  #                     fixedrange = TRUE,
-  #                     linecolor = "#A9A9A9",
-  #                     ticksuffix = tick_suffix,
-  #                     tickprefix = tick_prefix,
-  #                     zeroline = FALSE,
-  #                     range = yaxis_range),
-  #        annotations = annotations,
-  #        margin = list(b = xaxis_margin)) %>%
-  # config(displayModeBar = F)
-#p
+
+stats_2 <- shrimp_stacked %>% 
+  select(YEAR, REFUSAL_COUNT, DESCRIPTION) %>% 
+  filter(YEAR %in% c(2009:2018)) %>% 
+  group_by(DESCRIPTION) %>% 
+  dplyr::summarize(TOT = sum(REFUSAL_COUNT)) %>% 
+  ungroup() %>% 
+  arrange(desc(TOT))
+
+all = sum(stats_2$TOT)
+
+stats_2 <- stats_2 %>% 
+  mutate(PCT = TOT/all)
+  
+
