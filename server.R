@@ -89,7 +89,7 @@ function(input, output, session) {
              mode = NULL,
              plot_type = "bar",
              barmode = "stack",
-             tooltip_text = ~paste("Charge: ", capStr(DESCRIPTION),
+             tooltip_text = ~paste("Charge: ", map(DESCRIPTION, capStr),
                                   "<br>Refused:", REFUSAL_COUNT, "Imports", sep=" "),
              xaxis_label = "Year",
              yaxis_label = "Refusal Charge Count",
