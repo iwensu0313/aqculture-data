@@ -8,6 +8,10 @@
 
 
 ## Summary
+# Data prep script needs some tidying up. Originally used Shrimp_Import_Refusals.csv as the master dataset, but Madeleine made some fixes, so the most updated one is in the WWF folder.
+# Also there is still tidying code here that turned the table into a matrix type format used for the mini pie charts that are no longer needed. Remove when you get a chance 2/18
+
+
 # Collaborate with WWF to visualize US shrimp import refusals timeseries. Where they are coming from and reason for refusal.
 library(tidyverse)
 library(plotly)
@@ -22,15 +26,30 @@ int_path <- "data/int/FDA_Shrimp_Import"
 
 
 
-## Read in FDA and Country Coordinates Data
-fda <- read.csv(file.path(raw_path, "Shrimp_Import_Refusals.csv"), stringsAsFactors = FALSE)
+## Read in FDA and Supporting Data
+# read in fda table Madeleine sent 2/15, change column name of refusal code so it matches with refusal charge table
+fda <- read.csv("data/raw/FDA_Shrimp_Import/WWF/new_data_2-14-19.csv") %>% rename(REFUSAL_CODE = REFUSAL_CHARGES)
 
+# point coordinates of countries
 cntry_coord <- read.csv("data/ref/country_lat_lon.csv", stringsAsFactors = FALSE) %>% 
   mutate(COUNTRY_NAME = case_when(
     str_detect(COUNTRY_NAME, "United States") ~ "United States of America",
     TRUE ~ COUNTRY_NAME
   ))
-  
+
+# iso country codes, make sure codes are unique
+cntry_code <- read.csv(file.path(raw_path, "Shrimp_Import_Refusals.csv"), stringsAsFactors = FALSE) %>% 
+  select(ISO_CNTRY_CODE, COUNTRY_NAME) %>% 
+  distinct() %>% 
+  filter(!COUNTRY_NAME %in% c("UAE", "Brunei Darussalam", "Cote d'Ivoire", "Korea, Republic of", "Venezuela (Bolivarian Republic of)", "Viet Nam")) %>% 
+  filter(COUNTRY_NAME != "Philippines" | ISO_CNTRY_CODE != "PA")
+#write.csv(cntry_code, "data/raw/FDA_Shrimp_Import/FDA_Cntry_Code.csv")
+
+# refusal charge codes - remove appended dash and digits
+ref_code <- read.csv(file.path(raw_path, "FDA_Import_Refusals_Code.csv"), stringsAsFactors = FALSE) %>% 
+  select(REFUSAL_CODE = ASC_ID, REFUSAL_CHARGES = CHRG_CODE)
+ref_code$REFUSAL_CHARGES = map_chr(ref_code$REFUSAL_CHARGES, function(x){str_split(x, "\\-\\d+$")[[1]][1]})
+
 
 
 ## Tidy
@@ -39,24 +58,38 @@ cntry_coord <- read.csv("data/ref/country_lat_lon.csv", stringsAsFactors = FALSE
 fda$REFUSAL_DATE <- as.Date(fda$REFUSAL_DATE, "%m/%d/%Y")
 
 # create a separate year column
-shrimp_imp <- fda %>%
-  mutate(YEAR = lubridate::year(REFUSAL_DATE)) 
+shrimp_yr <- fda %>%
+  mutate(YEAR = lubridate::year(REFUSAL_DATE))
+
+
+# append country names based on ISO country code
+shrimp_cntry <- shrimp_yr %>%
+  left_join(cntry_code, by = "ISO_CNTRY_CODE")
 
 # fix country names Cote d'Ivoire to Ivory Coast
 # see original Excel sheet to compare
-shrimp_tidy <- shrimp_imp %>%
+shrimp_cntry_fix <- shrimp_cntry %>%
   mutate(COUNTRY_NAME = case_when(
     str_detect(COUNTRY_NAME, "Cote d'Ivoire") ~ "Ivory Coast",
+    str_detect(COUNTRY_NAME, "Côte d'Ivoire") ~ "Ivory Coast",
     str_detect(COUNTRY_NAME, "UAE") ~ "United Arab Emirates",
     str_detect(COUNTRY_NAME, "\\#N\\/A") ~ "Myanmar",
     str_detect(COUNTRY_NAME, "Viet Nam") ~ "Vietnam",
     str_detect(COUNTRY_NAME, "Venezuela \\(Bolivarian Republic of\\)") ~ "Venezuela",
     str_detect(COUNTRY_NAME, "Korea, Republic of") ~ "South Korea",
-    str_detect(COUNTRY_NAME, "Côte d'Ivoire") ~ "Ivory Coast",
     str_detect(COUNTRY_NAME, "Brunei Darussalam") ~ "Brunei",
     str_detect(COUNTRY_NAME, "Taiwan\\, Province of China") ~ "Taiwan",
     TRUE ~ COUNTRY_NAME
   ))
+
+# check matches with country coord data table
+setdiff(shrimp_cntry_fix$COUNTRY_NAME, cntry_coord$COUNTRY_NAME)
+
+
+# append refusal charge descriptions
+shrimp_tidy <- shrimp_cntry_fix %>% 
+  left_join(ref_code, by="REFUSAL_CODE")
+
 
 
 
@@ -65,12 +98,16 @@ shrimp_tidy <- shrimp_imp %>%
 ## Wrangle: 
 # Add identifier for each unique refusal instance
 # Expand refusal charges column so that each row is an individual refusal reason
-shrimp_gather <- shrimp_tidy %>%
-  select(YEAR, COUNTRY_NAME, starts_with("REFUSAL_CHARGES")) %>% 
-  mutate(ID = 1:nrow(.)) %>% # num of refusal instances
-  gather("DELETE", "REFUSAL_CHARGES", contains("REFUSAL_CHARGES")) %>%
-  select(-DELETE) %>%
-  filter(REFUSAL_CHARGES != "")  # remove rows with no refusal charge value
+# shrimp_gather <- shrimp_tidy %>%
+#   select(YEAR, COUNTRY_NAME, starts_with("REFUSAL_CHARGES")) %>% 
+#   mutate(ID = 1:nrow(.)) %>% # num of refusal instances
+#   gather("DELETE", "REFUSAL_CHARGES", contains("REFUSAL_CHARGES")) %>%
+#   select(-DELETE) %>%
+#   filter(REFUSAL_CHARGES != "")  # remove rows with no refusal charge value
+
+## Select columns that we need for plotting
+shrimp_gather <- shrimp_tidy %>% 
+  select(ID = Row_No, YEAR, COUNTRY_NAME, REFUSAL_CHARGES)
 
 
 
@@ -102,7 +139,7 @@ shrimp_summ <- ref_reasons %>%
   left_join(ref_instances, by = c("YEAR", "COUNTRY_NAME"))
 
 # check that sum of number of refusals equals original number of rows in fda data table
-sum(shrimp_summ$REFUSAL_NUM);nrow(fda)
+sum(shrimp_summ$REFUSAL_NUM);length(unique(fda$Row_No))
 
 # check country name matches
 setdiff(shrimp_summ$COUNTRY_NAME, cntry_coord$COUNTRY_NAME)
@@ -115,14 +152,14 @@ shrimp_spatial <- shrimp_summ %>%
   left_join(cntry_coord, by = "COUNTRY_NAME")
 
 # Taking top refusals to make dataset easier to test
+# refusal_num includes all other reasons besides the top refusal
 shrimp_refuse_dot <- shrimp_spatial %>%
-  select(YEAR, COUNTRY_NAME, LAT, LON, SALMONELLA, VETDRUGES, NITROFURAN, FILTHY, REFUSAL_NUM) 
+  select(YEAR, COUNTRY_NAME, LAT, LON, SALMONELLA, VETDRUGRES, NITROFURAN, FILTHY, REFUSAL_NUM) 
 
 
 
 ## Save data table
 write.csv(shrimp_refuse_dot, "data/output/shrimp_refuse_map.csv")
-
 
 
 
@@ -144,7 +181,7 @@ fix_charges <- ref_summ %>%
     str_detect(REFUSAL_CHARGES, "SALMONELLA") ~ "SALMONELLA",
     str_detect(REFUSAL_CHARGES, "NITROFURAN") ~ "NITROFURAN",
     str_detect(REFUSAL_CHARGES, "FILTHY") ~ "FILTHY",
-    str_detect(REFUSAL_CHARGES, "VETDRUGES") ~ "VET. DRUGS"))
+    str_detect(REFUSAL_CHARGES, "VETDRUGRES") ~ "VET. DRUGS"))
 
 # clump all other charges into one category
 shrimp_stacked <- fix_charges %>%
