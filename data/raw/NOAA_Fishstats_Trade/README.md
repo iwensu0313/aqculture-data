@@ -9,3 +9,13 @@ Format: ASCII
 Metadata:
 Notes: Downloaded each year one at a time, make sure to select December for the 'Month' drop-down to get data from Jan-Dec
 
+
+All Imports by District and Product
+trade_alldstrct_byproduct.results
+* Year
+* Edible - E = edible product, N = non-edible product
+* ProductName - name of the imported product
+* District - the port through which the product was imported
+* Country - import country of origin
+* Kilos
+* Dollars 
