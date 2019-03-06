@@ -164,14 +164,37 @@ k <- totalmol %>% filter(is.na(Species))
 unique(k$Product_Type)
 
 
-## Save Tidied TOTAL Shellfish Data
+## Save Tidied Intermediate Data
+# TOTAL Shellfish Data
 # check with USDA 2013 Census Report, pg 10 (http://www.aquafeed.com/documents/1412204142_1.pdf)
 tidy_mol <- totalmol %>% 
   mutate(Value = as.numeric(str_replace_all(Value, ",", "")))
 write.csv(tidy_mol, "data/int/usda_mollusk/US_sales_all_tidy.csv", row.names = FALSE)
 
 
-## Filter: 2013 Raw Data
+## Save Data for Gapfilling
+# Average 2013 sales in dollars per operation in the US is 434,613 USD. in 2005 it was 207,330 USD and in 1998 it was 166,594 USD.
+dolperop <- tidy_mol %>%
+  filter(Unit == "DOLLARS_PER_OPERATION") %>%
+  select(Year, State, Species, Unit, Value)
+
+write.csv(dolperop, file.path(intdata, "usda_mollusk/US_sales_per_operation.csv"), row.names = FALSE)
+
+dolperop1998 <- dolperop[3,5]
+dolperop2005 <- dolperop[2,5]
+dolperop2013 <- dolperop[1,5]
+
+
+
+
+## Visualize Data
+
+
+## US MOLLUSK PRODUCTION PER STATE ##
+# Summary: by sales in dollar, and no. of operations
+
+
+### Filter: 2013 Raw Data
 # Within totals, just select raw,  not calculated, data. Select for most recent year (2013). Replace (D) with NA.
 # Remove wholesale and retail information - the units for this is PCT BY OUTLET.
 rawmoll <- tidy_mol %>%
@@ -180,7 +203,6 @@ rawmoll <- tidy_mol %>%
   filter(State != "US") %>%
   select(-Wholesale_Type, -State_Code) %>%
   filter(Year == 2013) %>%
-  #mutate(Value = ifelse(str_detect(Value, "\\(.*\\)"), NA, Value)) %>% 
   filter(Species == "MOLLUSKS", Product_Type == "ALL PRODUCTS") # this is a temp solution for getting the total number of mollusk data per state... fix later
 
 DT::datatable(rawmoll)
@@ -188,12 +210,6 @@ DT::datatable(rawmoll)
 
 ## Gapfill
 # Use average sales in dollars per operation in 2013 to estimate missing state values
-# Average 2013 sales in dollars per operation in the US is 434,613 USD. in 2005 it was 207,330 USD and in 1998 it was 166,594 USD.
-dolperop <- tidy_mol %>%
-  filter(Unit == "DOLLARS_PER_OPERATION") %>%
-  select(Year, State, Species, Unit, Value)
-dolperop2013 <- dolperop[1,5] # row one, col five
-write.csv(dolperop, file.path(intdata, "usda_mollusk/US_sales_per_operation.csv"), row.names = FALSE)
 
 # Check: should only be two entries per state, one for OPERATIONS, one for DOLLARS
 table(rawmoll$State)
@@ -226,72 +242,6 @@ NA_count <- rawmoll %>%
 
 write.csv(NA_count, file.path(intdata, "usda_mollusk/data_NA_count.csv"), row.names = FALSE)
 
-
-## WAS TESTING SOMETHING...
-# # Gapfill
-# 
-# # Yipes.. lots of gapfilling using linear regression.. lots of missing data!! Improve gapfill method later. Investigate linear regression and imputation.
-# 
-# # * For states with at least the mean number of non-missing values, use state-unit average
-# # * For states with all missing values, use the regional-unit average.
-# # * For remaining missing values, use unit average
-# 
-# 
-# 
-# # Combine State Region Information from R `datasets` database
-# state_df <- cbind(state.name, as.character(state.region)) %>%
-#   as.data.frame() %>%
-#   rename(State = state.name, Region = V2) %>%
-#   mutate(State = toupper(State))
-# 
-# write.csv(state_df, file.path(intdata, "state_region.csv"))
-# 
-# moll_rgns <- rawmoll %>%
-#   left_join(state_df, by = "State")
-# 
-# 
-# # Add gapfill info based on number of non-missing values
-# # Gapfill column: 1 means gapfilled, 0 means not gapfilled
-# moll_gf <- moll_rgns %>%
-#   group_by(State, Unit) %>%
-#   mutate(NAs = sum(is.na(Value)),
-#          nonNAs = sum(!is.na(Value))) %>%
-#   ungroup() %>%
-#   mutate(Gapfill = ifelse(is.na(Value), 1, 0),
-#          GF_Method = ifelse(Gapfill == 1 & nonNAs >= 6, "State Average", NA),
-#          GF_Method = ifelse(Gapfill == 1 & nonNAs < 6, "Region Average", GF_Method))
-# 
-# moll_gf_final <- moll_gf %>%
-#   group_by(State, Unit) %>%
-#   mutate(State_Avg = mean(Value, na.rm=TRUE)) %>%
-#   ungroup() %>%
-#   mutate(Value = ifelse(is.na(Value) & GF_Method == "State Average", State_Avg, Value)) %>%
-#   group_by(Region, Unit) %>%
-#   mutate(Region_Avg = mean(Value, na.rm=TRUE)) %>%
-#   ungroup() %>%
-#   mutate(Value = ifelse(is.na(Value) & GF_Method == "Region Average", Region_Avg, Value)) %>%
-#   group_by(Unit) %>%
-#   mutate(Unit_Avg = mean(Value, na.rm=TRUE)) %>%
-#   ungroup() %>%
-#   mutate(Value = ifelse(is.na(Value), Unit_Avg, Value))
-# 
-# write.csv(moll_gf_final, file.path(intdata, "usda_mollusk/US_sales_gapfill_2013.csv"), row.names=FALSE)
-
-## Predict values with linear model- try this later
-# Compare models to select a gapfilling method
-# mod1 <- lm(Value ~ State + Species + Product_Type, data = fish_gf, na.action="na.exclude")
-# mod2 <- lm(Value ~ Species + Product_Type, data = fish_gf, na.action="na.exclude")
-# mod3 <- lm(Value ~ State + Product_Type, data = fish_gf, na.action="na.exclude")
-#
-# summary(mod1)
-# summary(mod2)
-# summary(mod3)
-#
-# AIC(mod1) # best model
-# AIC(mod2)
-# AIC(mod3)
-
-
 ## Total Sales in 2013 per State
 moll_sales <- gf_moll %>%
   select(Year, State, Unit, Value)
@@ -308,8 +258,7 @@ data_for_map <- moll_sales %>%
   )) %>%
   mutate(taxon = "Mollusk")
 
-
-## TIDY FOR PLOTTING MAP
+### TIDY FOR PLOTTING MAP
 # just state and lat/lon
 state_tidy <- us_states(resolution = "low") %>%
   select(state_name, geometry) %>%
@@ -338,7 +287,81 @@ shell_us_map <- state_tidy %>%
 
 
 
-## SHELLFISH PRODUCTION STATS
+## US MOLLUSK SALES PER OPERATION OVER TIME ##
+# Summary: sales/operation over time
+# Need to gapfill Sales in Dollars
+
+### Tidy
+# remove US values, wholesale & retail
+# select only operations and dollars
+# select data for All Food Fish Products
+moll_ts <- tidy_mol %>%
+  filter(Product_Type != "WHOLESALE" & Product_Type != "RETAIL") %>%
+  filter(Unit %in% c("OPERATIONS", "DOLLARS")) %>%
+  filter(State != "US") %>%
+  select(-Wholesale_Type, -State_Code, -Commodity) %>%
+  filter(Species == "MOLLUSKS", Product_Type == "ALL PRODUCTS") %>% 
+  spread(Unit, Value)
+
+### Gapfill
+# Use average sales in dollars per operation per census year to estimate missing state values
+
+# Check: 
+# should only be at most 3 entries per state, 1 for each census year
+table(moll_ts$State)
+# Count number of NAs that will be gapfilled
+sum(is.na(moll_ts$DOLLARS)) # 25 NAs
+sum(is.na(moll_ts$OPERATIONS)) # should b 0 NAs
+
+# Fill in estimated values and gapfill method
+# Summary: Where there is an NA for every State-Year, multiply No. of Operations for that State-Year by Avg Dollars per Operation in that Census Year
+# Make sure to manually check some values
+gf_moll_ts <- moll_ts %>%
+  mutate(gf_method = ifelse(is.na(DOLLARS), "AVG USD PER OP", "NONE")) %>% 
+  group_by(State, Year) %>% 
+  mutate(DOLLARS = ifelse(is.na(DOLLARS) & Year == 2013,
+                          OPERATIONS*dolperop2013,
+                          DOLLARS),
+         DOLLARS = ifelse(is.na(DOLLARS) & Year == 2005,
+                          OPERATIONS*dolperop2005,
+                          DOLLARS),
+         DOLLARS = ifelse(is.na(DOLLARS) & Year == 1998,
+                          OPERATIONS*dolperop1998,
+                          DOLLARS)) %>%
+  ungroup()
+
+
+# Check gapfilling e.g. Alaska had all NA values, for loop values should print TRUE for all three census years
+
+# for(i in 1:3){ # i=1
+# 
+# census <- c(1998, 2005, 2013)
+# 
+# # dollars is the gapfilled value
+# dollars <- filter(gf_moll_ts, State == "ALASKA" & Year == census[i])["DOLLARS"]
+# num_op <- filter(gf_moll_ts, State == "ALASKA" & Year == census[i])["OPERATIONS"]
+# 
+# listcensusavg = list("1998" = dolperop1998,
+#               "2005" = dolperop2005,
+#               "2013" = dolperop2013)
+# 
+# census_avg = listcensusavg[i][[1]]
+# 
+# # check that gapfiilled value equals to census avg multipled by numer of operaitons
+# print((dollars == num_op*census_avg)[[1]])
+# 
+# }
+
+### Summarize: dolls/op
+moll_dolop_plot <- gf_moll_ts %>% 
+  mutate(Dol_per_Op = DOLLARS/OPERATIONS) %>% 
+  select(-Species) %>% 
+  mutate(Year = as.character(Year))
+
+
+
+
+## SHELLFISH PRODUCTION BASELINE STATS ##
 # Read in tidied US Mollusk data
 stats <- read.csv("data/int/usda_mollusk/US_sales_all_tidy.csv")
 

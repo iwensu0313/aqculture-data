@@ -107,7 +107,23 @@ dashboardPage("US Aquaculture",
                                              source_text = list(
                                                p("Sources:"),
                                                p(tags$sup("1."), tags$a(href="https://quickstats.nass.usda.gov/", "US Department of Agriculture"), ", Quick Stats Census (2013)"))
-                                      ) # end of map ui
+                                      ), # end of map ui
+                                      
+                                      
+                                      ## Mollusk Dollars per Operation Timeseries
+                                      plot_ui(id = "moll_dolop_plot",
+                                              title_text = "Change in Sales and Number of Mollusk Farms",
+                                              sub_title_text = "Start exploring! USDA data on aquaculture production is only available for the census years 1998, 2005, and 2013. Mississippi is an outlier and not plotted on the graph below. While the number of shellfish farms in Washington haven't changed significantly over the years, the total sales rose from around 30 Million USD to over 80 Million USD! The sales and number of mollusk operations in Texas also rose significantly.",
+                                              select_type = "slider_discrete",
+                                              select_location = "below",
+                                              select_choices = unique(moll_dolop_plot$Year),
+                                              animate = TRUE,
+                                              select_label = "Play the Timeseries:",
+                                              source_text = list(
+                                                p("Sources:"),
+                                                p(tags$sup("1."), tags$a(href="https://quickstats.nass.usda.gov/", "US Department of Agriculture"), ", Quick Stats Census (2013)"))
+                                              
+                                      ) # end mollusk dollars/operation timeseries
                                       
                                   ) # end div
                          ) # end mollusk tab panel

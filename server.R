@@ -72,6 +72,25 @@ function(input, output, session) {
              popup_label = "state")
   
   
+  ## Mollusk Sales/Operation Timeseries ##
+  callModule(card_plot, "moll_dolop_plot",
+             fish_dolop_plot,
+             x = "OPERATIONS",
+             y = "DOLLARS",
+             plot_type = "scatter", 
+             filter_field = "Year", # filter for slider input
+             mode = "text",
+             tooltip_text = ~State,
+             textposition = 'middle right', # "middle right", "top center"
+             xaxis_label = "No. of Farms",
+             yaxis_label = "Sales in US Dollars",
+             xaxis_range = c(0,225),
+             x_dtick = 50, # distance between ticks
+             x_tickangle = 360, # normal angle
+             yaxis_range = c(0,150000000)) 
+  
+  
+  
   
   ## FDA Shrimp Import Refusal Summary Stats ##
   callModule(summary_stats, "shrimp_metrics",
