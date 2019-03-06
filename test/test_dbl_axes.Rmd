@@ -1,5 +1,5 @@
 ---
-title: "test_2yaxis"
+title: "test_fish_salesPerOp"
 author: "Iwen Su"
 date: "March 5, 2019"
 output: html_document
@@ -21,7 +21,11 @@ setwd(here())
 source("global.R")
 
 ## Define color palette
-ygb <- colorRampPalette(brewer.pal(5,'YlGnBu'))(200); cols <- ygb[19:200]
+# Eliminate super light yellow colors
+# Good for both colorQuantile() and colorNumeric()
+ygb <- colorRampPalette(brewer.pal(5,'YlGnBu'))(200)
+ygb_cols <- ygb[19:200]
+
 OrRd <- colorRampPalette(brewer.pal(5, 'OrRd'))(200) # Orange, Red
 OrRd_cols <- OrRd[19:200]
 ```
@@ -30,42 +34,55 @@ OrRd_cols <- OrRd[19:200]
 ```{r}
 head(fish_dolop_plot)
 
-data <- filter(fish_dolop_plot, Year == 2013) %>% 
-  select(State, Dollars = DOLLARS, Operations = OPERATIONS)
+data <- filter(fish_dolop_plot, Year == 2013)
+#data <- fish_dolop_plot
 
 p <- plot_ly(data, 
-             x = ~Operations, 
-             y = ~Dollars, 
-             type = 'scatter',
+             x = ~OPERATIONS, 
+             y = ~DOLLARS, 
+             type = 'scatter', # plot_type
+             color = ~Quantile, # color_group
+             colors = ygb_cols,
+             #mode = 'markers', 
              mode = 'text',
-             text = ~State, 
-             textposition = 'middle right',
-             textfont = list(color = '#000000', size = 12)) %>%
+             marker = list(size=5, alpha=0.4),
+             text = ~State,
+             #text = ~paste(State,"<br>Farms: ", OPERATIONS, "<br>Sales (USD): ", DOLLARS, sep=""), # tooltip_text
+             textposition = 'middle') %>%
   layout(title = 'Dollars per Operation in 2013',
-         xaxis = list(title = 'No. of Farms',
+         xaxis = list(title = 'No. of Farms', # xaxis_label
                       zeroline = TRUE,
-                      range = c(0, 220)),
-         yaxis = list(title = 'Sales in US Dollars',
-                      range = c(0,203000000)))
+                      range = c(0, 220)), # xaxis_range
+         yaxis = list(title = 'Sales in US Dollars', # yaxis_label
+                      range = c(0,203000000))) %>% # yaxis_range
+  add_annotations(text="Sales per Operation", # manually placed legend
+                  xref="paper", yref="paper",
+                  x=1.02, xanchor="left",
+                  y=0.8, yanchor="bottom", # Same y as legend below
+                  legendtitle=TRUE, showarrow=FALSE) %>%
+    # add_trace(x = c(150, 200, 250, 300), 
+    #         y = c(100000000, 150000000, 200000000, 250000000), 
+    #         xaxis='OPERATIONS', yaxis='DOLLARS', mode='text') %>% 
+  layout(legend=list(x=1.0, y=0.8, # match wtih title annotation
+                     yanchor="top" )
+         #,
+         # xaxis2 = list(domain = c(0.6, 0.95), anchor='DOLLARS'),
+         # yaxis2 = list(domain = c(0.6, 0.95), anchor='OPERATIONS')
+         )
+
+#   add_annotations(x = data$OPERATIONS,
+#                   y = data$DOLLARS,
+#                   text = data$State,
+#                   xref = "x",
+#                   yref = "y",
+# #                  showarrow = TRUE,
+#  #                 arrowhead = 4,
+#   #                arrowsize = .5,
+#                   ax = 20,
+#                   ay = 0)
 p
 
 
-
-xaxis = list(title = xaxis_label, 
-                          fixedrange = TRUE, 
-                          linecolor = "#A9A9A9",
-                          categoryorder = xaxis_categoryorder,
-                          categoryarray = xaxis_categoryarray,
-                          dtick = x_dtick,
-                          tickangle = x_tickangle,
-                          range = xaxis_range), 
-             yaxis = list(title = yaxis_label, 
-                          fixedrange = TRUE, 
-                          linecolor = "#A9A9A9",
-                          ticksuffix = tick_suffix,
-                          tickprefix = tick_prefix, 
-                          zeroline = FALSE, 
-                          range = yaxis_range)
 
 ```
 

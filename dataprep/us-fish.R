@@ -351,11 +351,30 @@ gf_fish_ts <- fish_ts %>%
 # }
 
 ### Summarize: dolls/op
-fish_dolop_plot <- gf_fish_ts %>% 
+fish_summ <- gf_fish_ts %>% 
   mutate(Dol_per_Op = DOLLARS/OPERATIONS) %>% 
   select(-Species) %>% 
-  mutate(Year = as.character(Year))#%>% 
-#  gather("Data_Type", "Value", c("DOLLARS", "OPERATIONS", "Dol_per_Op"))
+  mutate(Year = as.character(Year))
+
+# Get quantiles of dollars per operation to use in legend when plot
+zero <- quantile(fish_summ$Dol_per_Op, probs=seq(0,1,0.2))[[1]]
+twenty <- quantile(fish_summ$Dol_per_Op, probs=seq(0,1,0.2))[[2]]
+forty <- quantile(fish_summ$Dol_per_Op, probs=seq(0,1,0.2))[[3]]
+sixty <- quantile(fish_summ$Dol_per_Op, probs=seq(0,1,0.2))[[4]]
+eighty <- quantile(fish_summ$Dol_per_Op, probs=seq(0,1,0.2))[[5]]
+hundo <- quantile(fish_summ$Dol_per_Op, probs=seq(0,1,0.2))[[6]]
+
+fish_dolop_plot <- fish_summ %>% 
+  mutate(Quantile = case_when(
+    Dol_per_Op >= zero & Dol_per_Op <= twenty ~ "11K-53K",
+    Dol_per_Op > twenty & Dol_per_Op <= forty ~ "54K-125K",
+    Dol_per_Op > forty & Dol_per_Op <= sixty ~ "126K-320K",
+    Dol_per_Op > sixty & Dol_per_Op <= eighty ~ "321K-556K",
+    Dol_per_Op > eighty & Dol_per_Op <= hundo ~ "557K-5,970K"
+    )) %>% 
+  mutate(Quantile = as.factor(Quantile))
+
+fish_dolop_plot$Quantile <- factor(fish_dolop_plot$Quantile, levels = c("11K-53K", "54K-125K", "126K-320K", "321K-556K", "557K-5,970K"))
 
 
 

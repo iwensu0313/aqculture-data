@@ -34,6 +34,17 @@ function(input, output, session) {
              y = "DOLLARS",
              plot_type = "scatter", 
              filter_field = "Year", # filter for slider input
+             color_group = "Quantile",
+             colors = ygb_cols,
+             legendText = "Sales per Operation",
+             # annotations = list(
+             #   text="Sales per Operation", # manually placed legend
+             #   xref="paper", yref="paper",
+             #   x=1.02, xanchor="left",
+             #   y=0.8, yanchor="bottom", # Same y as legend below
+             #   legendtitle=TRUE, 
+             #   showarrow=FALSE
+             # ),
              mode = "text",
              tooltip_text = ~State,
              textposition = 'middle right', # "middle right", "top center"

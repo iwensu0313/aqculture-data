@@ -235,7 +235,7 @@ card_plot <- function(input,
                       xaxis_range = c("None", "None"),
                       tick_suffix = "",
                       tick_prefix = "",
-                      annotations = NULL,
+                      legendText = NULL,
                       xaxis_margin = NULL,
                       x_dtick = NULL,
                       x_tickangle = 45,
@@ -282,7 +282,7 @@ card_plot <- function(input,
     
   } else if (mode == "text") { # no markers or lines
     line = list(width=0)
-    marker = list(line=list(color="#ffffff", width=0, opacity=0.4))
+    marker = list(size=0, color="#ffffff", width=0)
     
   }
   
@@ -336,8 +336,15 @@ card_plot <- function(input,
                           tickprefix = tick_prefix, 
                           zeroline = FALSE, 
                           range = yaxis_range),
+             legend = list(x=1.0, y=0.8, # match title annotation
+                           yanchor="top"), 
              barmode = barmode,
-             annotations = annotations,
+             annotations = list(
+               text=legendText, # manually placed legend
+               xref="paper", yref="paper",
+               x=1.02, xanchor="left",
+               y=0.8, yanchor="bottom", # Same y as legend below
+               legendtitle=TRUE, showarrow=FALSE),
              margin = list(b = xaxis_margin)) %>%
       config(displayModeBar = F)
     
