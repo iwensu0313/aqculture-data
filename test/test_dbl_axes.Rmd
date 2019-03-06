@@ -1,0 +1,71 @@
+---
+title: "test_2yaxis"
+author: "Iwen Su"
+date: "March 5, 2019"
+output: html_document
+---
+
+# Setup
+
+```{r}
+library(tidyverse)
+library(rgdal)
+library(leaflet)
+library(here)
+library(RColorBrewer)
+library(sf)
+library(rworldmap)
+library(leaflet.minicharts)
+
+setwd(here())
+source("global.R")
+
+## Define color palette
+ygb <- colorRampPalette(brewer.pal(5,'YlGnBu'))(200); cols <- ygb[19:200]
+OrRd <- colorRampPalette(brewer.pal(5, 'OrRd'))(200) # Orange, Red
+OrRd_cols <- OrRd[19:200]
+```
+
+
+```{r}
+head(fish_dolop_plot)
+
+data <- filter(fish_dolop_plot, Year == 2013) %>% 
+  select(State, Dollars = DOLLARS, Operations = OPERATIONS)
+
+p <- plot_ly(data, 
+             x = ~Operations, 
+             y = ~Dollars, 
+             type = 'scatter',
+             mode = 'text',
+             text = ~State, 
+             textposition = 'middle right',
+             textfont = list(color = '#000000', size = 12)) %>%
+  layout(title = 'Dollars per Operation in 2013',
+         xaxis = list(title = 'No. of Farms',
+                      zeroline = TRUE,
+                      range = c(0, 220)),
+         yaxis = list(title = 'Sales in US Dollars',
+                      range = c(0,203000000)))
+p
+
+
+
+xaxis = list(title = xaxis_label, 
+                          fixedrange = TRUE, 
+                          linecolor = "#A9A9A9",
+                          categoryorder = xaxis_categoryorder,
+                          categoryarray = xaxis_categoryarray,
+                          dtick = x_dtick,
+                          tickangle = x_tickangle,
+                          range = xaxis_range), 
+             yaxis = list(title = yaxis_label, 
+                          fixedrange = TRUE, 
+                          linecolor = "#A9A9A9",
+                          ticksuffix = tick_suffix,
+                          tickprefix = tick_prefix, 
+                          zeroline = FALSE, 
+                          range = yaxis_range)
+
+```
+

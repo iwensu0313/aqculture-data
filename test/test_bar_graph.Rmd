@@ -1,5 +1,5 @@
 ---
-title: "Testing Stacked Bar Graph"
+title: "Testing Bar Graph"
 author: "Iwen Su"
 output: html_document
 ---
@@ -61,3 +61,134 @@ p
 
 
 ```
+
+
+# Test Bar Graph
+For Food Fish Sales/Operation timeseries
+
+```{r}
+
+head(fish_dolop_plot)
+
+ca <- filter(fish_dolop_plot, State == "CALIFORNIA")
+  
+ p <- plot_ly(ca, 
+                 x = ~Year,
+                 y = ~Value,
+                 #z = z,
+                 colors = ygb_cols,
+                 type = "scatter", 
+                 line = list(width=3), 
+                 mode = "lines+markers", 
+                 marker = list(size=6),
+                 text = paste(ca$Data_Type, prettyNum(ca$Value, big.mark=","), "<br>Gapfill: ",ca$gf_method, sep=" "),
+                 hoverinfo = "text") %>%
+      layout(font = list(family = "Lato", size = 14),
+             xaxis = list(title = "Year", 
+                          fixedrange = TRUE, 
+                          linecolor = "#A9A9A9",
+                          categoryorder = NULL,
+                          categoryarray = NULL,
+                          dtick = NULL,
+                          tickangle = 45,
+                          range =  c("None", "None")), 
+             yaxis = list(title = "Dollars per Operation", 
+                          fixedrange = TRUE, 
+                          linecolor = "#A9A9A9",
+                          ticksuffix = "",
+                          tickprefix = "", 
+                          zeroline = FALSE, 
+                          range =  c("None", "None")),
+             barmode = NULL,
+             annotations = NULL,
+             margin = list(b = NULL)) %>%
+      config(displayModeBar = F)
+ 
+ 
+ 
+ p
+ 
+ 
+ 
+ p <- plotly(ca) %>% 
+   add_lines(x = ~YEAR, y = ~DOLLARS, name = "Dollars") %>%
+  add_lines(x = ~YEAR, y = ~OPERATIONS, name = "Operations", yaxis = "y2") %>% 
+   layout(font = list(family = "Lato", size = 14),
+             xaxis = list(title = "Year", 
+                          fixedrange = TRUE, 
+                          linecolor = "#A9A9A9",
+                          categoryorder = NULL,
+                          categoryarray = NULL,
+                          dtick = NULL,
+                          tickangle = 45,
+                          range =  c("None", "None")), 
+             yaxis = list(title = "Dollars per Operation", 
+                          fixedrange = TRUE, 
+                          linecolor = "#A9A9A9",
+                          ticksuffix = "",
+                          tickprefix = "", 
+                          zeroline = FALSE, 
+                          range =  c("None", "None")),
+             barmode = NULL,
+             annotations = NULL,
+             margin = list(b = NULL)) %>%
+      config(displayModeBar = F)
+
+```
+
+
+```{r}
+ay <- list(
+  tickfont = list(color = "red"),
+  overlaying = "y",
+  side = "right",
+  title = "second y axis"
+)
+
+p <- plot_ly(ca, 
+                 x = ~Year,
+                 y = ~DOLLARS,
+                 #z = z,
+                 colors = ygb_cols,
+                 type = "scatter", 
+                 line = list(width=3), 
+                 mode = "lines+markers", 
+                 marker = list(size=6),
+                 text = paste("Dollars: ", prettyNum(ca$DOLLARS, big.mark=","), "<br>Gapfill: ",ca$gf_method, sep=" "),
+                 hoverinfo = "text") %>%
+   add_lines(x = ~Year, y = ~OPERATIONS, name = "Operations", yaxis = "y2") %>% 
+      layout(font = list(family = "Lato", size = 14),
+             xaxis = list(title = "Year", 
+                          fixedrange = TRUE, 
+                          linecolor = "#A9A9A9",
+                          categoryorder = NULL,
+                          categoryarray = NULL,
+                          dtick = NULL,
+                          tickangle = 45,
+                          range =  c("None", "None")), 
+             yaxis = list(title = "Dollars per Operation", 
+                          fixedrange = TRUE, 
+                          linecolor = "#A9A9A9",
+                          ticksuffix = "",
+                          tickprefix = "", 
+                          zeroline = FALSE, 
+                          range =  c("None", "None")),
+             yaxis2 = ay,
+             barmode = NULL,
+             annotations = NULL,
+             margin = list(b = NULL)) %>%
+      config(displayModeBar = F)
+ 
+ 
+ 
+ p
+ 
+
+```
+
+
+
+
+
+
+

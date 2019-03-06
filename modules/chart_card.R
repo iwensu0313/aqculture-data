@@ -71,8 +71,13 @@ library(assertthat)
 plot_ui <- function(id, 
                     title_text = NULL,
                     sub_title_text = NULL,
-                    select_type = c(NULL, "radio", "drop_down", "search", "select"),
+                    select_type = c(NULL, "radio", "drop_down", "search", "select", "slider", "slider_discrete"),
                     select_location = c(NULL, "above", "below"),
+                    slider_min = NULL, # only for sliderInput
+                    slider_max = NULL, # only for sliderInput
+                    slider_start = NULL, # only for sliderInput
+                    slider_sep = ",", # only for sliderInput
+                    animate = FALSE, # only for sliderInput
                     select_choices = c(""),
                     select_label = NULL, 
                     selected = NULL,
@@ -101,6 +106,20 @@ plot_ui <- function(id,
                                choices = select_choices,
                                label = p(select_label),
                                selected = selected)
+    } else if (select_type == "slider") {
+      select <- sliderInput(ns("select"),
+                            label = p(select_label),
+                            min = slider_min,
+                            max = slider_max,
+                            value = slider_start,
+                            sep = slider_sep,
+                            animate = animate)
+    } else if (select_type == "slider_discrete") {
+      select <- sliderTextInput(ns("select"),
+                            choices = select_choices,
+                            label = p(select_label),
+                            selected = selected,
+                            animate = animate)
     } else {
       select <- checkboxGroupInput(ns("select"),
                                    choices = select_choices,
@@ -173,7 +192,7 @@ plot_ui <- function(id,
 #' column in a dataframe @seealso @param df
 #' @param colors list, optional. List with set of colors to be used in chart 
 #' (e.g. colors = c("#f46d43", "#3288bd", "#fee08b"))
-#' @param plot_type character, defines the type of chart to be built. See \url{https://plot.ly/r/#basic-charts}
+#' @param plot_type character, defines the type of chart to be built. Set to "bar" for bar graph or "scatter" for scatterplot or line graph. See \url{https://plot.ly/r/#basic-charts}
 #' for addition information
 #' @param tooltip_text object, optional. Determines content for tooltip. Best to use paste() function as it
 #' enables the ability to put text and column values together. When passing a column value to the tooltip the "~"
@@ -203,12 +222,13 @@ card_plot <- function(input,
                       y,
                       z = NULL,
                       color_group = NULL,
-                      mode = "markers",
+                      mode = c("markers", "lines+markers", "text"),
                       filter_field = NULL,
                       colors = NULL, 
                       plot_type,
                       barmode = NULL, # if using bar graph
                       tooltip_text = NULL,
+                      textposition = NULL, # if mode = 'text'
                       xaxis_label = "",
                       yaxis_label = "",
                       yaxis_range = c("None", "None"),
@@ -259,6 +279,11 @@ card_plot <- function(input,
   } else if (mode == "markers") {
     line = list(width=0)
     marker = list(size=15, line=list(color="#202C39", width=1))
+    
+  } else if (mode == "text") { # no markers or lines
+    line = list(width=0)
+    marker = list(line=list(color="#ffffff", width=0, opacity=0.4))
+    
   }
   
   # Make arguments formulas
@@ -292,7 +317,8 @@ card_plot <- function(input,
                  line = line, 
                  mode = mode, 
                  marker = marker,
-                 text = tooltip_text, 
+                 text = tooltip_text,
+                 textposition = textposition,
                  hoverinfo = "text") %>%
       layout(font = list(family = "Lato", size = 14),
              xaxis = list(title = xaxis_label, 

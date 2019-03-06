@@ -28,14 +28,14 @@ dashboardPage("US Aquaculture",
               
               navbarMenu("Production",
                          
-                         tabPanel("USDA Census",
+                         tabPanel("Food Fish",
                                   
                                   div(class = "master",
                                       
-                                      tab_title(title = "USDA Census of Aquaculture",
+                                      tab_title(title = "US Food Fish Production",
                                                 lead = "\"The first aquaculture census was conducted in 1998, in response to the intense need for an accurate measure of the aquaculture sector. The aquaculture Census collects detailed information relating to production volume and methods, surface water acres and sources, sales, point of first sale outlets, and aquaculture distributed for restoration, conservation, enhancement, or recreational purposes.\" - USDA Census of Aquaculture",
                                                 subtitle = "About the Data:",
-                                                description = list("Below you will find US production data from the US Department of Aquaculture Quick Stats database for food fish and mollusks. The information displayed is from the most recent, comprehensive, available source: the USDA 2013 Census Aquaculture. Farms include facilities with sales of $1,000 or more. Total sales in dollars for US food fish production had to be estimated for 15 states due to undisclosed data. For mollusk production, total sales in dollars had to be estimated for Alaska, Georgia, Hawaii, Maine, Massachusetts, and Pennsylvania. These were estimated by multiplying the number of farm operations by the average US sales per operation for mollusks and food fish separately. The 2018 USDA aquaculture census will be released in late 2019.")),
+                                                description = list("Below you will find US production data from the US Department of Aquaculture Quick Stats database for food fish. The information displayed is from the most recent, comprehensive, available source: the USDA 2013 Census Aquaculture. Farms include facilities with sales of $1,000 or more. Total sales in dollars for US food fish production had to be estimated for 15 states due to undisclosed data. These were estimated by multiplying the number of farm operations by the average US sales per operation. The 2018 USDA aquaculture census will be released in late 2019.")),
                                       
                                       
                                       ## Summary Stats
@@ -61,6 +61,35 @@ dashboardPage("US Aquaculture",
                                       ), # end of map ui
                                       
                                       
+                                      ## Fish Dollars per Operation Timeseries
+                                      plot_ui(id = "fish_dolop_plot",
+                                              title_text = "Change in Sales and Number of Food Fish Farms",
+                                              sub_title_text = "Start exploring! USDA data on aquaculture production is only available for the census years 1998, 2005, and 2013. Mississippi is an outlier and not plotted on the graph below.",
+                                              select_type = "slider_discrete",
+                                              select_location = "below",
+                                              select_choices = unique(fish_dolop_plot$Year),
+                                              animate = TRUE,
+                                              select_label = "Play the Timeseries:",
+                                              source_text = list(
+                                                p("Sources:"),
+                                                p(tags$sup("1."), tags$a(href="https://quickstats.nass.usda.gov/", "US Department of Agriculture"), ", Quick Stats Census (2013)"))
+
+                                      ) # end fish dollars/operation timeseries
+                                  ) # end div
+                         ), # end food fish tab panel
+                                             
+                         
+                         
+                         tabPanel("Mollusks",
+                                  
+                                  div(class = "master",
+                                      
+                                      tab_title(title = "US Mollusk Production",
+                                                lead = "\"The first aquaculture census was conducted in 1998, in response to the intense need for an accurate measure of the aquaculture sector. The aquaculture Census collects detailed information relating to production volume and methods, surface water acres and sources, sales, point of first sale outlets, and aquaculture distributed for restoration, conservation, enhancement, or recreational purposes.\" - USDA Census of Aquaculture",
+                                                subtitle = "About the Data:",
+                                                description = list("Below you will find US production data from the US Department of Aquaculture Quick Stats database for mollusks. The information displayed is from the most recent, comprehensive, available source: the USDA 2013 Census Aquaculture. Farms include facilities with sales of $1,000 or more. For mollusk production, total sales in dollars had to be estimated for Alaska, Georgia, Hawaii, Maine, Massachusetts, and Pennsylvania. These were estimated by multiplying the number of farm operations by the average US sales per operation. The 2018 USDA aquaculture census will be released in late 2019.")),
+                                      
+                                      
                                       ## Summary Stats
                                       summary_stats_ui(id = "shell_metrics",
                                                        number_boxes = 3),
@@ -81,8 +110,8 @@ dashboardPage("US Aquaculture",
                                       ) # end of map ui
                                       
                                   ) # end div
+                         ) # end mollusk tab panel
                                   
-                         ) # end US prod tab panel
                          
               ), # end US Production nav bar menu
               

@@ -13,19 +13,42 @@ function(input, output, session) {
                          "of food fish farms were located in Mississippi, Alabama, and North Carolina."))
   
   
-  ## Finfish Aquaculture Map ##
+  ## Food Fish Aquaculture Map ##
   callModule(card_choro_map, "fish_us_map",
              data = fish_us_map,
              field = "input",
              filter_field = type, # type of data to plot
              popup_value = "map_data",
              popup_units = "units",
-             color_palette = ygb,
+             color_palette = ygb[80:200],
              color_palette_type = "quantile",
              legend_title = "Legend",
              popup_label = "state")
   
-
+  
+  
+  ## Food Fish Sales/Operation Timeseries ##
+  callModule(card_plot, "fish_dolop_plot",
+             fish_dolop_plot,
+             x = "OPERATIONS",
+             y = "DOLLARS",
+             plot_type = "scatter", 
+             filter_field = "Year", # filter for slider input
+             mode = "text",
+             tooltip_text = ~State,
+             textposition = 'middle right', # "middle right", "top center"
+             xaxis_label = "No. of Farms",
+             yaxis_label = "Sales in US Dollars",
+             xaxis_range = c(0,220),
+             x_dtick = 50, # distance between ticks
+             x_tickangle = 360, # normal angle
+             yaxis_range = c(0,120000000)) 
+  # Problem is that Mississippi is a huge outlier
+  
+  
+  
+  
+  
   
   ## Mollusk Aquaculture Summary Stats ##
   callModule(summary_stats, "shell_metrics",
@@ -43,7 +66,7 @@ function(input, output, session) {
              filter_field = type, # type of data to plot
              popup_value = "map_data",
              popup_units = "units",
-             color_palette = ygb,
+             color_palette = ygb[80:200],
              color_palette_type = "quantile",
              legend_title = "Legend",
              popup_label = "state")
@@ -85,7 +108,7 @@ function(input, output, session) {
              yaxis_range = c(0,max(shrimp_stacked$REFUSAL_COUNT)),
              color_group = "DESCRIPTION",
              filter_field = "COUNTRY_NAME",
-             colors = ygb_cols, 
+             colors = ygb_cols,
              mode = NULL,
              plot_type = "bar",
              barmode = "stack",

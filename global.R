@@ -21,6 +21,7 @@ library(sendmailR)
 library(shinyAce)
 library(DT)
 library(cowplot)
+library(shinyWidgets)
 
 
 ## Color Palettes
@@ -54,11 +55,6 @@ options(scipen = 999,
         digits = 5)
 
 
-
-
-## CA AQUACULTURE DATA SOURCES ##
-source("dataprep/ca-prod.R")
-source("dataprep/ca-imports.R")
 
 ## US AQUACULTURE DATA SOURCES ##
 source("dataprep/us-fish.R")

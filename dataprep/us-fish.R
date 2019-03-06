@@ -161,36 +161,39 @@ totalfish <- sp_fix %>%
 unique(totalfish$Product_Type) # should have 9 values 
 unique(totalfish$Species) # should have 27 values incl NA
 
-# Check whether there are repeated values (lb per head is just lb divided by head, or if each row is just reported in different units.
-# test <- totalfish %>%
-#   filter(Unit %in% c("HEAD","LB","LB_PER_HEAD")) %>%
-#   select(-Wholesale_Type, -State_Code, -Commodity)
-# 
-# test$Value = as.factor(test$Value)
-# 
-# test2 <- test %>%
-#   mutate(Value = str_replace_all(Value, ",", "")) %>%
-#   spread(Unit, Value) %>%
-#   mutate(HEAD = as.numeric(HEAD), # convert from character to numeric
-#          LB = as.numeric(LB),
-#          LB_PER_HEAD = as.numeric(LB_PER_HEAD),
-#          testval = LB/HEAD) # check testval against LB_PER_HEAD
-# 
-# # use validate to do a second check - should be no fails
-# k = validate::check_that(test2, round(LB/HEAD,1) == LB_PER_HEAD)
-# summary(k)
-# 
-# DT::datatable(test2)
 
-
-## Save Tidied TOTAL Finfish Data
+## Save Tidied Intermediate Data
+# TOTAL Finfish Data
 # check with USDA 2013 Census Report, pg 10 (http://www.aquafeed.com/documents/1412204142_1.pdf)
 tidy_fish <- totalfish %>% 
   mutate(Value = as.numeric(str_replace_all(Value, ",", "")))
 write.csv(tidy_fish, "data/int/usda_fish/US_sales_all_tidy.csv", row.names = FALSE)
 
 
-## Filter: 2013 Raw Data
+## Save data for Gapfilling
+# Avg dollars per operation in the US per census year
+# Average 2013 sales in dollars per operation in the US is 564,928 USD. in 2005 it was 364,038 USD and in 1998 it was 319,056 USD.
+dolperop <- tidy_fish %>%
+  filter(Unit == "DOLLARS_PER_OPERATION") %>%
+  select(Year, State, Species, Unit, Value) 
+
+write.csv(dolperop, file.path(intdata, "usda_fish/US_sales_per_operation.csv"))
+
+dolperop1998 <- dolperop[3,5]
+dolperop2005 <- dolperop[2,5]
+dolperop2013 <- dolperop[1,5]
+
+
+
+
+## Visualize Data
+
+
+## US FOOD FISH PRODUCTION PER STATE ##
+# Summary: by sales in dollar, and no. of operations
+
+
+### Filter: 2013 Raw Data
 # Within totals, just select raw,  not calculated, data. Select for most recent year (2013).
 # Remove wholesale and retail information - the units for this is PCT BY OUTLET.
 
@@ -202,21 +205,9 @@ rawfish <- tidy_fish %>%
   select(-Wholesale_Type, -State_Code) %>%
   filter(Year == 2013) %>%
   filter(Species == "FOOD FISH", Product_Type == "ALL PRODUCTS") # get totals for food fish
-  #mutate(Value = ifelse(str_detect(Value, "\\(.*\\)"), NA, Value),
-  #       Value = as.numeric(str_replace_all(Value, ",", "")))
 
-
-
-
-## Gapfill
+### Gapfill
 # Use average sales in dollars per operation in 2013 to estimate missing state values
-# Average 2013 sales in dollars per operation in the US is 564,928 USD. in 2005 it was 364,038 USD and in 1998 it was 319,056 USD.
-dolperop <- tidy_fish %>%
-  filter(Unit == "DOLLARS_PER_OPERATION") %>%
-  select(Year, State, Species, Unit, Value) #%>%
-#mutate(Value = as.numeric(str_replace_all(Value, ",", "")))
-dolperop2013 <- dolperop[1,5]
-write.csv(dolperop, file.path(intdata, "usda_fish/US_sales_per_operation.csv"))
 
 # Check: 
 # should only be two entries per state, one for OPERATIONS, one for DOLLARS
@@ -224,18 +215,18 @@ table(rawfish$State)
 # Only NAs should be DOLLAR value
 sum(is.na(rawfish$Value))
 er <- rawfish %>% filter(Unit == "DOLLARS")
-sum(is.na(er$Value))
+sum(is.na(er$Value)) # number of NAs, 15
 
 # fill in estimated values and gapfill method
 gf_fish <- rawfish %>%
   mutate(gf_method = ifelse(is.na(Value), "AVG USD PER OP", "NONE")) %>% 
   group_by(State) %>% 
-  mutate(Value = ifelse(is.na(Value),
+  mutate(Value = ifelse(is.na(Value), # selects No. of Operations
                         prod(Value, na.rm=TRUE)*dolperop2013,
-                        Value))
+                        Value)) %>% 
+  ungroup()
 
-
-## NA Count 
+### NA Count 
 # per data type
 # Lots of NAs for Sales measured in dollars.
 NA_count <- rawfish %>%
@@ -245,66 +236,6 @@ NA_count <- rawfish %>%
   ungroup()
 
 write.csv(NA_count, file.path(intdata, "usda_fish/data_NA_count.csv"))
-
-
-## Gapfill
-# Yipes.. lots of gapfilling using linear regression.. lots of missing data!! Improve gapfill method later. Investigate linear regression and imputation.
-#
-# * For states with at least the mean number of non-missing values, use state-unit average
-# * For states with all missing values, use the regional-unit average.
-# * For remaining missing values, use unit average
-
-# Combine State Region Information from R `datasets` database
-# state_df <- cbind(state.name, as.character(state.region)) %>%
-#   as.data.frame() %>%
-#   rename(State = state.name, Region = V2) %>%
-#   mutate(State = toupper(State))
-#
-# fish_rgns <- rawfish %>%
-#   left_join(state_df, by = "State")
-#
-#
-# # Add gapfill info based on number of non-missing values
-# # Gapfill column: 1 means gapfilled, 0 means not gapfilled
-# fish_gf <- fish_rgns %>%
-#   group_by(State, Unit) %>%
-#   mutate(NAs = sum(is.na(Value)),
-#          nonNAs = sum(!is.na(Value))) %>%
-#   ungroup() %>%
-#   mutate(Gapfill = ifelse(is.na(Value), 1, 0),
-#          GF_Method = ifelse(Gapfill == 1 & nonNAs >= 6, "State Average", NA),
-#          GF_Method = ifelse(Gapfill == 1 & nonNAs < 6, "Region Average", GF_Method))
-# 
-# fish_gf_final <- fish_gf %>%
-#   group_by(State, Unit) %>%
-#   mutate(State_Avg = mean(Value, na.rm=TRUE)) %>%
-#   ungroup() %>%
-#   mutate(Value = ifelse(is.na(Value) & GF_Method == "State Average", State_Avg, Value)) %>%
-#   group_by(Region, Unit) %>%
-#   mutate(Region_Avg = mean(Value, na.rm=TRUE)) %>%
-#   ungroup() %>%
-#   mutate(Value = ifelse(is.na(Value) & GF_Method == "Region Average", Region_Avg, Value)) %>%
-#   group_by(Unit) %>%
-#   mutate(Unit_Avg = mean(Value, na.rm=TRUE)) %>%
-#   ungroup() %>%
-#   mutate(Value = ifelse(is.na(Value), Unit_Avg, Value))
-# 
-# write.csv(fish_gf_final, file.path(intdata, "usda_fish/US_sales_gapfill.csv"), row.names=FALSE)
-# 
-# ## Predict values with linear model- try this later
-# # Compare models to select a gapfilling method
-# # mod1 <- lm(Value ~ State + Species + Product_Type, data = fish_gf, na.action="na.exclude")
-# # mod2 <- lm(Value ~ Species + Product_Type, data = fish_gf, na.action="na.exclude")
-# # mod3 <- lm(Value ~ State + Product_Type, data = fish_gf, na.action="na.exclude")
-# #
-# # summary(mod1)
-# # summary(mod2)
-# # summary(mod3)
-# #
-# # AIC(mod1) # best model
-# # AIC(mod2)
-# # AIC(mod3)
-
 
 # Total Sales in 2013 per State
 fish_sales <- gf_fish %>%
@@ -325,8 +256,7 @@ data_for_map <- fish_sales %>%
   )) %>%
   mutate(taxon = "Fish")
 
-
-## TIDY FOR PLOTTING MAP
+### TIDY FOR PLOTTING MAP
 # just state and lat/lon
 state_tidy <- us_states(resolution = "low") %>%
   select(state_name) %>%
@@ -353,12 +283,84 @@ fish_us_map <- state_tidy %>%
   left_join(fish_us, by = "state") # add lat/lon back in
 
 
-#st_write(fish_us_map, "data/output/fish_us_map.csv") # saves sf object as data frame
+
+
+## US FOOD FISH SALES PER OPERATION OVER TIME ##
+# Summary: sales/operation over time
+# Need to gapfill Sales in Dollars
+
+### Tidy
+# remove US values, wholesale & retail
+# select only operations and dollars
+# select data for All Food Fish Products
+fish_ts <- tidy_fish %>%
+  filter(Product_Type != "WHOLESALE" & Product_Type != "RETAIL") %>%
+  filter(Unit %in% c("OPERATIONS", "DOLLARS")) %>%
+  filter(State != "US") %>%
+  select(-Wholesale_Type, -State_Code, -Commodity) %>%
+  filter(Species == "FOOD FISH", Product_Type == "ALL PRODUCTS") %>% 
+  spread(Unit, Value)
+
+### Gapfill
+# Use average sales in dollars per operation per census year to estimate missing state values
+
+# Check: 
+# should only be at most 3 entries per state, 1 for each census year
+table(fish_ts$State)
+# Count number of NAs that will be gapfilled
+sum(is.na(fish_ts$DOLLARS)) # 43 NAs
+sum(is.na(fish_ts$OPERATIONS)) # should b 0 NAs
+
+# Fill in estimated values and gapfill method
+# Summary: Where there is an NA for every State-Year, multiply No. of Operations for that State-Year by Avg Dollars per Operation in that Census Year
+# Make sure to manually check some values
+gf_fish_ts <- fish_ts %>%
+  mutate(gf_method = ifelse(is.na(DOLLARS), "AVG USD PER OP", "NONE")) %>% 
+  group_by(State, Year) %>% 
+  mutate(DOLLARS = ifelse(is.na(DOLLARS) & Year == 2013,
+                        OPERATIONS*dolperop2013,
+                        DOLLARS),
+         DOLLARS = ifelse(is.na(DOLLARS) & Year == 2005,
+                        OPERATIONS*dolperop2005,
+                        DOLLARS),
+         DOLLARS = ifelse(is.na(DOLLARS) & Year == 1998,
+                OPERATIONS*dolperop1998,
+                DOLLARS)) %>%
+  ungroup()
+
+
+# Check gapfilling e.g. Delaware had all NA values should be true
+
+# for(i in 1:3){ # i=1
+# 
+# census <- c(1998, 2005, 2013)  
+# 
+# # dollars is the gapfilled value
+# dollars <- filter(gf_fish_ts, State == "DELAWARE" & Year == census[i])["DOLLARS"]
+# num_op <- filter(gf_fish_ts, State == "DELAWARE" & Year == census[i])["OPERATIONS"]
+# 
+# listcensusavg = list("1998" = dolperop1998,
+#               "2005" = dolperop2005,
+#               "2013" = dolperop2013)
+# 
+# census_avg = listcensusavg[i][[1]]
+# 
+# # check that gapfiilled value equals to census avg multipled by numer of operaitons
+# print((dollars == num_op*census_avg)[[1]])
+# 
+# }
+
+### Summarize: dolls/op
+fish_dolop_plot <- gf_fish_ts %>% 
+  mutate(Dol_per_Op = DOLLARS/OPERATIONS) %>% 
+  select(-Species) %>% 
+  mutate(Year = as.character(Year))#%>% 
+#  gather("Data_Type", "Value", c("DOLLARS", "OPERATIONS", "Dol_per_Op"))
 
 
 
 
-## FOOD FISH PRODUCTION STATS
+## FOOD FISH PRODUCTION BASELINE STATS ##
 # Read in tidied US Food Fish data
 stats <- read.csv("data/int/usda_fish/US_sales_all_tidy.csv")
 
