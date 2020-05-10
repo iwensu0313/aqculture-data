@@ -23,6 +23,9 @@
 
 ## Setup
 library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(stringr)
 library(USAboundaries)
 library(validate)
 library(devtools)
@@ -32,10 +35,12 @@ library(Hmisc)
 rawdata <- "data/raw/USDA_Quickstats"
 intdata <- "data/int"
 
+update_date = "20200509"
 
 ## Import Data
 # 1998, 2005, and 2013 Census Data for Fish Food
-data <- read.csv(file.path(rawdata, "food_fish_sales.csv"), stringsAsFactors = FALSE)
+filename = paste("food_fish_sales_",update_date,".csv",sep="")
+data <- read.csv(file.path(rawdata, filename), stringsAsFactors = FALSE)
 
 
 ## Wrangle: Total
@@ -132,7 +137,7 @@ secsplit$Species <- sub('(.*)\\,\\s+(.*)','\\2 \\1', secsplit$Species)
 secsplit$Species <- sub('\\(.*\\)', 'OTHER', secsplit$Species)
 #secsplit$Species <- sub(', ', ' ', secsplit$Species) # remove comma from "CARP, (EXCL GRASS)"
 
-# check names, should be 24 types incl NA
+# check names, should be 29 types incl NA
 unique(secsplit$Species)
 
 # find parts of species names that got placed in product type - do "(EXCL GRASS" separately
@@ -158,8 +163,8 @@ totalfish <- sp_fix %>%
 
 
 ## Check
-unique(totalfish$Product_Type) # should have 9 values 
-unique(totalfish$Species) # should have 27 values incl NA
+unique(totalfish$Product_Type) 
+unique(totalfish$Species) 
 
 
 ## Save Tidied Intermediate Data
@@ -167,7 +172,8 @@ unique(totalfish$Species) # should have 27 values incl NA
 # check with USDA 2013 Census Report, pg 10 (http://www.aquafeed.com/documents/1412204142_1.pdf)
 tidy_fish <- totalfish %>% 
   mutate(Value = as.numeric(str_replace_all(Value, ",", "")))
-write.csv(tidy_fish, "data/int/usda_fish/US_sales_all_tidy.csv", row.names = FALSE)
+filename <- paste("data/int/usda_fish/US_sales_all_tidy_", update_date, ".csv", sep="")
+write.csv(tidy_fish, filename, row.names = FALSE)
 
 
 ## Save data for Gapfilling
@@ -177,12 +183,13 @@ dolperop <- tidy_fish %>%
   filter(Unit == "DOLLARS_PER_OPERATION") %>%
   select(Year, State, Species, Unit, Value) 
 
-write.csv(dolperop, file.path(intdata, "usda_fish/US_sales_per_operation.csv"))
+filename <- paste("usda_fish/US_sales_per_operation_", update_date, ".csv", sep="")
+write.csv(dolperop, file.path(intdata, filename))
 
 dolperop1998 <- dolperop[3,5]
 dolperop2005 <- dolperop[2,5]
 dolperop2013 <- dolperop[1,5]
-
+dolperop2018 <- dolperop[4,5]
 
 
 
@@ -193,7 +200,7 @@ dolperop2013 <- dolperop[1,5]
 # Summary: by sales in dollar, and no. of operations
 
 
-### Filter: 2013 Raw Data
+### Filter: 2018 Raw Data
 # Within totals, just select raw,  not calculated, data. Select for most recent year (2013).
 # Remove wholesale and retail information - the units for this is PCT BY OUTLET.
 
@@ -203,11 +210,11 @@ rawfish <- tidy_fish %>%
   filter(Unit %in% c("OPERATIONS", "HEAD", "LB", "DOLLARS", "EGGS")) %>%
   filter(State != "US") %>%
   select(-Wholesale_Type, -State_Code) %>%
-  filter(Year == 2013) %>%
+  filter(Year == 2018) %>%
   filter(Species == "FOOD FISH", Product_Type == "ALL PRODUCTS") # get totals for food fish
 
 ### Gapfill
-# Use average sales in dollars per operation in 2013 to estimate missing state values
+# Use average sales in dollars per operation in 2018 to estimate missing state values
 
 # Check: 
 # should only be two entries per state, one for OPERATIONS, one for DOLLARS
@@ -215,14 +222,14 @@ table(rawfish$State)
 # Only NAs should be DOLLAR value
 sum(is.na(rawfish$Value))
 er <- rawfish %>% filter(Unit == "DOLLARS")
-sum(is.na(er$Value)) # number of NAs, 15
+sum(is.na(er$Value)) # number of NAs, 19
 
 # fill in estimated values and gapfill method
 gf_fish <- rawfish %>%
   mutate(gf_method = ifelse(is.na(Value), "AVG USD PER OP", "NONE")) %>% 
   group_by(State) %>% 
   mutate(Value = ifelse(is.na(Value), # selects No. of Operations
-                        prod(Value, na.rm=TRUE)*dolperop2013,
+                        prod(Value, na.rm=TRUE)*dolperop2018,
                         Value)) %>% 
   ungroup()
 
@@ -235,9 +242,10 @@ NA_count <- rawfish %>%
             pct_NA = round(sum(is.na(Value))/length(Value),2)) %>%
   ungroup()
 
-write.csv(NA_count, file.path(intdata, "usda_fish/data_NA_count.csv"))
+filename = paste("usda_fish/data_NA_count_", update_date, ".csv", sep="")
+write.csv(NA_count, file.path(intdata, filename))
 
-# Total Sales in 2013 per State
+# Total Sales in 2018 per State
 fish_sales <- gf_fish %>%
   select(Year, State, Unit, Value) 
 
@@ -259,17 +267,17 @@ data_for_map <- fish_sales %>%
 ### TIDY FOR PLOTTING MAP
 # just state and lat/lon
 state_tidy <- us_states(resolution = "low") %>%
-  select(state_name) %>%
-  rename(state = state_name) %>%
-  mutate(state = toupper(state))
+  dplyr::select(state_name) %>%
+  dplyr::rename(state = state_name) %>%
+  dplyr::mutate(state = toupper(state))
 
 # maybe there's a more efficient way to add values back into the states with missing values.. but for now this is fine..
 fish_us <- state_tidy %>%
   full_join(data_for_map, by = "state") %>%
   filter(!state %in% c("PUERTO RICO", "DISTRICT OF COLUMBIA")) %>%
-  complete(state, type) %>%  # fill in categories where there is no data
+  tidyr::complete(state, type) %>%  # fill in categories where there is no data
   filter(!is.na(type)) %>% # remove extra NA rows created
-  select(-geometry) %>%  # temporarily remove geometry 
+  # select(-geometry) %>%  # temporarily remove geometry 
   mutate(units = case_when( # add back in where there are NAs..
     str_detect(type, "EGGS") ~ "eggs",
     str_detect(type, "DOLLARS") ~ "USD",
@@ -299,7 +307,7 @@ fish_ts <- tidy_fish %>%
   filter(State != "US") %>%
   select(-Wholesale_Type, -State_Code, -Commodity) %>%
   filter(Species == "FOOD FISH", Product_Type == "ALL PRODUCTS") %>% 
-  spread(Unit, Value)
+  tidyr::spread(Unit, Value)
 
 ### Gapfill
 # Use average sales in dollars per operation per census year to estimate missing state values
@@ -317,7 +325,10 @@ sum(is.na(fish_ts$OPERATIONS)) # should b 0 NAs
 gf_fish_ts <- fish_ts %>%
   mutate(gf_method = ifelse(is.na(DOLLARS), "AVG USD PER OP", "NONE")) %>% 
   group_by(State, Year) %>% 
-  mutate(DOLLARS = ifelse(is.na(DOLLARS) & Year == 2013,
+  mutate(DOLLARS = ifelse(is.na(DOLLARS) & Year == 2018,
+                          OPERATIONS*dolperop2018,
+                          DOLLARS),
+         DOLLARS = ifelse(is.na(DOLLARS) & Year == 2013,
                         OPERATIONS*dolperop2013,
                         DOLLARS),
          DOLLARS = ifelse(is.na(DOLLARS) & Year == 2005,
@@ -357,12 +368,12 @@ fish_summ <- gf_fish_ts %>%
   mutate(Year = as.character(Year))
 
 # Get quantiles of dollars per operation to use in legend when plot
-zero <- quantile(fish_summ$Dol_per_Op, probs=seq(0,1,0.2))[[1]]
-twenty <- quantile(fish_summ$Dol_per_Op, probs=seq(0,1,0.2))[[2]]
-forty <- quantile(fish_summ$Dol_per_Op, probs=seq(0,1,0.2))[[3]]
-sixty <- quantile(fish_summ$Dol_per_Op, probs=seq(0,1,0.2))[[4]]
-eighty <- quantile(fish_summ$Dol_per_Op, probs=seq(0,1,0.2))[[5]]
-hundo <- quantile(fish_summ$Dol_per_Op, probs=seq(0,1,0.2))[[6]]
+zero <- stats::quantile(fish_summ$Dol_per_Op, probs=seq(0,1,0.2), na.rm=TRUE)[[1]]
+twenty <- quantile(fish_summ$Dol_per_Op, probs=seq(0,1,0.2), na.rm=TRUE)[[2]]
+forty <- quantile(fish_summ$Dol_per_Op, probs=seq(0,1,0.2), na.rm=TRUE)[[3]]
+sixty <- quantile(fish_summ$Dol_per_Op, probs=seq(0,1,0.2), na.rm=TRUE)[[4]]
+eighty <- quantile(fish_summ$Dol_per_Op, probs=seq(0,1,0.2), na.rm=TRUE)[[5]]
+hundo <- quantile(fish_summ$Dol_per_Op, probs=seq(0,1,0.2), na.rm=TRUE)[[6]]
 
 fish_dolop_plot <- fish_summ %>% 
   mutate(Quantile = case_when(
@@ -381,12 +392,13 @@ fish_dolop_plot$Quantile <- factor(fish_dolop_plot$Quantile, levels = c("11K-53K
 
 ## FOOD FISH PRODUCTION BASELINE STATS ##
 # Read in tidied US Food Fish data
-stats <- read.csv("data/int/usda_fish/US_sales_all_tidy.csv")
+filename <- paste("data/int/usda_fish/US_sales_all_tidy_", update_date, ".csv", sep="")
+stats <- read.csv(filename)
 
 ## which species has the largest $ share
 sales <- stats %>%
   filter(Unit == "DOLLARS",
-         Year == 2013,
+         Year == 2018,
          Product_Type == "ALL PRODUCTS", # select totals for all products
          State == "US") %>% 
   filter(!Species %in% c("GRASS CARP", "OTHER CARP")) %>%  # remove sub categories
@@ -397,7 +409,7 @@ sales <- stats %>%
 # which state has the largest $ share and what was the sales
 state <- stats %>%
   filter(Unit == "DOLLARS",
-         Year == 2013,
+         Year == 2018,
          Species == "FOOD FISH",
          Product_Type == "ALL PRODUCTS") %>% 
   select(State, Unit, Value) %>% 
@@ -406,7 +418,7 @@ state <- stats %>%
 # where are most of the food fish operations?
 op <- stats %>%
   filter(Unit == "OPERATIONS",
-         Year == 2013,
+         Year == 2018,
          Species == "FOOD FISH",
          Product_Type == "ALL PRODUCTS") %>%
   select(State, Unit, Value) %>%  

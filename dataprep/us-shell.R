@@ -21,19 +21,25 @@
 
 ## Setup
 library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(stringr)
 library(USAboundaries)
 library(validate)
 library(devtools)
+library(Hmisc)
+library(janitor)
 
 # raw data file directory
 rawdata <- "data/raw/USDA_Quickstats"
 intdata <- "data/int"
 
+update_date = "20200509"
 
 ## Import Data
-# 1998, 2005, and 2013 Census Data for Molusks
-data <- read.csv(file.path(rawdata, "mollusk_sales.csv"), stringsAsFactors = FALSE)
-
+# 1998, 2005, 2013, 2018 Census Data for Molusks
+filename = paste("mollusk_sales_",update_date,".csv",sep="")
+data <- read.csv(file.path(rawdata, filename), stringsAsFactors = FALSE)
 
 ## Wrangle: Total
 # Tidy and reorganize
@@ -169,8 +175,8 @@ unique(k$Product_Type)
 # check with USDA 2013 Census Report, pg 10 (http://www.aquafeed.com/documents/1412204142_1.pdf)
 tidy_mol <- totalmol %>% 
   mutate(Value = as.numeric(str_replace_all(Value, ",", "")))
-write.csv(tidy_mol, "data/int/usda_mollusk/US_sales_all_tidy.csv", row.names = FALSE)
-
+filename <- paste("data/int/usda_mollusk/US_sales_all_tidy_", update_date, ".csv", sep="")
+write.csv(tidy_mol, filename, row.names = FALSE)
 
 ## Save Data for Gapfilling
 # Average 2013 sales in dollars per operation in the US is 434,613 USD. in 2005 it was 207,330 USD and in 1998 it was 166,594 USD.
@@ -178,11 +184,13 @@ dolperop <- tidy_mol %>%
   filter(Unit == "DOLLARS_PER_OPERATION") %>%
   select(Year, State, Species, Unit, Value)
 
-write.csv(dolperop, file.path(intdata, "usda_mollusk/US_sales_per_operation.csv"), row.names = FALSE)
+filename <- paste("usda_mollusk/US_sales_per_operation_", update_date, ".csv", sep="")
+write.csv(dolperop, file.path(intdata, filename), row.names = FALSE)
 
 dolperop1998 <- dolperop[3,5]
 dolperop2005 <- dolperop[2,5]
 dolperop2013 <- dolperop[1,5]
+dolperop2018 <- dolperop[4,5]
 
 
 
@@ -202,7 +210,7 @@ rawmoll <- tidy_mol %>%
   filter(Unit %in% c("OPERATIONS", "HEAD", "LB", "DOLLARS")) %>%
   filter(State != "US") %>%
   select(-Wholesale_Type, -State_Code) %>%
-  filter(Year == 2013) %>%
+  filter(Year == 2018) %>%
   filter(Species == "MOLLUSKS", Product_Type == "ALL PRODUCTS") # this is a temp solution for getting the total number of mollusk data per state... fix later
 
 DT::datatable(rawmoll)
@@ -219,7 +227,7 @@ gf_moll <- rawmoll %>%
   mutate(gf_method = ifelse(is.na(Value), "AVG USD PER OP", "NONE")) %>% 
   group_by(State) %>% 
   mutate(Value = ifelse(is.na(Value),
-                  prod(Value, na.rm=TRUE)*dolperop2013,
+                  prod(Value, na.rm=TRUE)*dolperop2018,
                   Value))
 
 
@@ -240,9 +248,10 @@ NA_count <- rawmoll %>%
             pct_NA = round(sum(is.na(Value))/length(Value),2)) %>%
   ungroup()
 
-write.csv(NA_count, file.path(intdata, "usda_mollusk/data_NA_count.csv"), row.names = FALSE)
+filename = paste("usda_mollusk/data_NA_count_", update_date, ".csv", sep="")
+write.csv(NA_count, file.path(intdata, filename), row.names = FALSE)
 
-## Total Sales in 2013 per State
+## Total Sales in 2018 per State
 moll_sales <- gf_moll %>%
   select(Year, State, Unit, Value)
 
@@ -319,7 +328,10 @@ sum(is.na(moll_ts$OPERATIONS)) # should b 0 NAs
 gf_moll_ts <- moll_ts %>%
   mutate(gf_method = ifelse(is.na(DOLLARS), "AVG USD PER OP", "NONE")) %>% 
   group_by(State, Year) %>% 
-  mutate(DOLLARS = ifelse(is.na(DOLLARS) & Year == 2013,
+  mutate(DOLLARS = ifelse(is.na(DOLLARS) & Year == 2018,
+                          OPERATIONS*dolperop2018,
+                          DOLLARS),
+         DOLLARS = ifelse(is.na(DOLLARS) & Year == 2013,
                           OPERATIONS*dolperop2013,
                           DOLLARS),
          DOLLARS = ifelse(is.na(DOLLARS) & Year == 2005,
@@ -363,24 +375,25 @@ moll_dolop_plot <- gf_moll_ts %>%
 
 ## SHELLFISH PRODUCTION BASELINE STATS ##
 # Read in tidied US Mollusk data
-stats <- read.csv("data/int/usda_mollusk/US_sales_all_tidy.csv")
+filename = paste("data/int/usda_mollusk/US_sales_all_tidy_", update_date, ".csv", sep="")
+stats <- read.csv(filename)
 
 # which species has the largest $ share?
 sales <- stats %>%
   filter(Unit == "DOLLARS",
-         Year == 2013,
+         Year == 2018,
          Species %in% c("ABALONE", "CLAMS", "MUSSELS", "OTHER SPECIES", "OYSTERS"), # select the umbrella categories
          Product_Type == "ALL PRODUCTS", # select totals for all products
          State == "US") %>% 
   select(Species, Unit, Value) %>% 
   arrange(desc(Value)) %>% 
-  adorn_totals("row") %>% # add a row with totals of the Values if no NAs
+  janitor::adorn_totals("row") %>% # add a row with totals of the Values if no NAs
   mutate(Percent = Value/.[.$Species == "Total",][["Value"]]) # divide by total value
 
 # which state has the largest $ share?
 state <- stats %>%
   filter(Unit == "DOLLARS",
-         Year == 2013,
+         Year == 2018,
          Species == "MOLLUSKS",
          Product_Type == "ALL PRODUCTS") %>% 
   select(State, Unit, Value) %>% 
@@ -391,7 +404,7 @@ state$Value[2]/state$Value[1] # no. 1 is US, no. 2 is top producing state
 # Which states have the most number of operations
 ops <- stats %>% 
   filter(Unit == "OPERATIONS",
-         Year == 2013,
+         Year == 2018,
          Species == "MOLLUSKS",
          Product_Type == "ALL PRODUCTS") %>%
   select(State, Unit, Value) %>%  
@@ -403,13 +416,17 @@ ops <- stats %>%
 
 ## Data Download
 # combine with USDA food fish dt
-USDA_shell <- read.csv('data/int/usda_mollusk/US_sales_all_tidy.csv') %>% 
+filename = paste('data/int/usda_mollusk/US_sales_all_tidy_', update_date, '.csv', sep='')
+USDA_shell <- read.csv(filename) %>% 
   filter(!Product_Type %in% c("RETAIL", "WHOLESALE")) %>% 
   select(-State_Code, -Commodity, -Wholesale_Type)
-USDA_fish <- read.csv('data/int/usda_fish/US_sales_all_tidy.csv') %>% 
+filename = paste('data/int/usda_fish/US_sales_all_tidy_', update_date, '.csv', sep='')
+USDA_fish <- read.csv(filename) %>% 
   filter(!Product_Type %in% c("RETAIL", "WHOLESALE")) %>% 
-  select(-State_Code, -Commodity, -Wholesale_Type)
+  # select(-State_Code, -Commodity, -Wholesale_Type)
+  select(-State_Code, -Commodity, -Wholesale_Type, -Ag.District, -Ag.District.Code, -County, -County.ANSI)
 usdaTable <- USDA_shell %>% 
   rbind(USDA_fish)
 
-write.csv(usdaTable, "data/int/usdaTable.csv", row.names = FALSE)
+filename = paste("data/int/usdaTable_", update_date, ".csv", sep="")
+write.csv(usdaTable, filename, row.names = FALSE)
